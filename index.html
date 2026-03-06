@@ -58,14 +58,10 @@ let touchX = e.touches[0].clientX;
 let rect = canvas.getBoundingClientRect();
 player.x = (touchX - rect.left) * (canvas.width / rect.width) - 20;
 });
-async function saveScore() {
-const btn = document.getElementById('saveBtn');
-btn.innerText = "Connecting...";
-try {
-const base = window.createBaseAccountSDK({ appName: "GLAWNET" });
-await base.pay({ to: "0x764d0e278d33D391466092A10AABF616B7C3f533", value: "100000", currency: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" });
-alert("Saved!");
-} catch (e) { alert("Failed"); btn.innerText = "SAVE SCORE ($0.10)"; }
+function saveScore() {
+var scoreValue = document.getElementById('finalScore').innerText;
+alert('TEST SUCCESS! GLAWNET caught your score: ' + scoreValue);
+location.reload();
 }
 draw();
 </script>
