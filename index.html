@@ -3,76 +3,69 @@
 <html>
 <head>
 <title>GLAWNET</title>
+<script src=""></script>
 <style>
-body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; }
-canvas { background: #111; display: block; margin: 0 auto; border-bottom: 5px solid blue; }
-#menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 20px; border: 2px solid blue; display: none; }
+body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
+canvas { background: #0a0a0a; display: block; margin: 0 auto; border-bottom: 5px solid #0052FF; touch-action: none; }
+#menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; display: none; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; }
+button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 20px; font-weight: bold; width: 100%; border-radius: 12px; }
 </style>
 </head>
 <body>
-
-<h1>GLAWNET</h1>
+<div style="position: absolute; top: 20px; width: 100%;">
+<h1 style="color:#0052FF; margin: 0;">GLAWNET</h1>
 <p>Score: <span id="s">0</span></p>
-<canvas id="g"></canvas>
-
-<div id="menu">
-<h2>GAME OVER</h2>
-<p>Final Score: <span id="fs">0</span></p>
-<button onclick="alert('TEST SUCCESS!')" style="padding: 20px; background: blue; color: white; font-weight: bold;">SAVE SCORE (TEST)</button>
-
-
-
-<button onclick="location.reload()">Try Again</button>
 </div>
-
+<canvas id="g"></canvas>
+<div id="menu">
+<h2 style="color: #FF3B30;">CRASHED!</h2>
+<p>Final Score: <span id="fs">0</span></p>
+<button id="payBtn" onclick="payAndSave()">SAVE SCORE ($0.10)</button>
+<button onclick="location.reload()" style="background:none; text-decoration:underline; color:#666; margin-top:10px;">Try Again</button>
+</div>
 <script>
 var c = document.getElementById("g");
 var x = c.getContext("2d");
 c.width = 400; c.height = 600;
-
-var score = 0; var active = true;
+var score = 0; var active = true; var speed = 6;
 var p = { x: 180, y: 500, w: 40, h: 40 };
 var obs = [];
-
 function loop() {
 if (!active) return;
 x.clearRect(0, 0, 400, 600);
-
-x.fillStyle = "blue";
+x.fillStyle = "#0052FF";
 x.fillRect(p.x, p.y, p.w, p.h);
-
-if (Math.random() < 0.03) {
-obs.push({ x: Math.random() * 360, y: -40, w: 40, h: 40 });
-}
-
+if (Math.random() < 0.03) { obs.push({ x: Math.random() * 360, y: -40, w: 40, h: 40 }); }
 for (var i = 0; i < obs.length; i++) {
-var o = obs[i];
-o.y += 5;
-x.fillStyle = "red";
+var o = obs[i]; o.y += speed;
+x.fillStyle = "#FF3B30";
 x.fillRect(o.x, o.y, o.w, o.h);
-
 if (p.x < o.x + o.w && p.x + p.w > o.x && p.y < o.y + o.h && p.y + p.h > o.y) {
-active = false;
-document.getElementById("menu").style.display = "block";
+active = false; document.getElementById("menu").style.display = "block";
 document.getElementById("fs").innerText = score;
 }
-
-if (o.y > 600) {
-obs.splice(i, 1);
-score++;
-document.getElementById("s").innerText = score;
-}
+if (o.y > 600) { obs.splice(i, 1); score++; document.getElementById("s").innerText = score; speed += 0.05; }
 }
 requestAnimationFrame(loop);
 }
-
 window.addEventListener("touchmove", function(e) {
 var rect = c.getBoundingClientRect();
-p.x = (e.touches[0].clientX - rect.left) - 20;
+p.x = (e.touches[0].clientX - rect.left) * (400 / rect.width) - 20;
+}, {passive: false});
+async function payAndSave() {
+const btn = document.getElementById("payBtn");
+btn.innerText = "Connecting...";
+try {
+const base = window.createBaseAccountSDK({ appName: "GLAWNET" });
+await base.pay({
+to: "0x764d0e278d33D391466092A10AABF616B7C3f533",
+value: "100000",
+currency: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
 });
-
+alert("Score Saved!"); location.reload();
+} catch (err) { alert("Use Coinbase Wallet to pay."); btn.innerText = "SAVE SCORE ($0.10)"; }
+}
 loop();
 </script>
-
 </body>
 </html>
