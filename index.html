@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GLAWNET Runner</title>
+<script src=""></script>
+<style>
+canvas { background: #0a0a0a; width: 100%; max-width: 400px; border-bottom: 4px solid #0052FF; touch-action: none; }
+body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; }
+#menu { box-shadow: 0 0 20px #0052FF; }
+</style>
+</head>
+<body>
+
+  <div id="ui" class="absolute top-10 text-center">
+<h1 class="text-3xl font-bold text-blue-500 tracking-tighter">GLAWNET</h1>
+<p class="text-xl">Score: <span id="score">0</span></p>
+</div>
+
+  <script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 400; canvas.height = 600;
+
+</body>
+</html>
