@@ -1,70 +1,18 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GLAWNET Runner</title>
 <script src=""></script>
-<script src=""></script>
 <style>
-canvas { background: #0a0a0a; width: 100%; max-width: 400px; border-bottom: 4px solid #0052FF; touch-action: none; }
-body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; }
-#menu { border: 2px solid #0052FF; box-shadow: 0 0 20px #0052FF; }
+body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+canvas { background: #0a0a0a; border-bottom: 4px solid #0052FF; max-width: 100%; height: auto; }
+#menu { border: 2px solid #0052FF; background: rgba(0,0,0,0.9); padding: 20px; border-radius: 15px; text-align: center; position: absolute; display: none; }
 </style>
 </head>
 <body>
-
-  <div id="ui" class="absolute top-10 text-center">
-<h1 class="text-3xl font-bold text-blue-500 tracking-tighter">GLAWNET</h1>
-<p class="text-xl">Score: <span id="score">0</span></p>
-</div>
-<canvas id="gameCanvas"></canvas>
-<div id="menu" class="hidden absolute bg-black/95 p-8 rounded-2xl text-center">
-<h2 class="text-3xl font-bold mb-2 text-red-500">CRASHED!</h2>
-<p class="text-gray-400 mb-6">Final Score: <span id="finalScore" class="text-white font-bold text-2xl">0</span></p>
-<button id="saveBtn" onclick="saveScore()" class="bg-blue-600 px-8 py-4 rounded-full font-bold text-lg w-full">SAVE SCORE ($0.10)</button>
-<button onclick="location.reload()" class="mt-4 text-sm text-blue-400 underline block w-full">Try Again</button>
-</div>
-
-  <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = 400; canvas.height = 600;
-let score = 0; let gameActive = true; let speed = 5;
-const player = { x: 175, y: 500, w: 40, h: 40, color: '#0052FF' };
-let obstacles = [];
-function draw() {
-if (!gameActive) return;
-ctx.clearRect(0, 0, canvas.width, canvas.height);
-ctx.fillStyle = player.color;
-ctx.fillRect(player.x, player.y, player.w, player.h);
-if (Math.random() < 0.03) { obstacles.push({ x: Math.random() * 360, y: -40, w: 40, h: 40 }); }
-obstacles.forEach((obs, i) => {
-obs.y += speed;
-ctx.fillStyle = '#FF3B30';
-ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-if (player.x < obs.x + obs.w && player.x + player.w > obs.x && player.y < obs.y + obs.h && player.y + player.h > obs.y) {
-gameActive = false;
-document.getElementById('menu').classList.remove('hidden');
-document.getElementById('finalScore').innerText = score;
-}
-if (obs.y > 600) { obstacles.splice(i, 1); score++; document.getElementById('score').innerText = score; speed += 0.05; }
-});
-requestAnimationFrame(draw);
-}
-canvas.addEventListener('touchmove', (e) => {
-let touchX = e.touches[0].clientX;
-let rect = canvas.getBoundingClientRect();
-player.x = (touchX - rect.left) * (canvas.width / rect.width) - 20;
-});
-function saveScore() {
-var scoreValue = document.getElementById('finalScore').innerText;
-alert('TEST SUCCESS! GLAWNET caught your score: ' + scoreValue);
-location.reload();
-}
-draw();
-</script>
 
 </body>
 </html>
