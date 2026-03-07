@@ -147,16 +147,29 @@ async function payAndSave() {
 }
 
 function updateLeaderboard(newScore) {
-    let scores = JSON.parse(localStorage.getItem('glawnet_scores')) || [];
-    scores.push(newScore);
-    scores.sort((a, b) => b - a);
-    scores = scores.slice(0, 5);
-    localStorage.setItem('glawnet_scores', JSON.stringify(scores));
+    // 1. Get the connected address from the button text or a variable
+    const btn = document.getElementById("connectBtn");
+    const playerAddress = btn.innerText.includes("...") ? btn.innerText : "Anonymous";
 
+    // 2. Get existing data (which is now an array of objects)
+    let leaderboardData = JSON.parse(localStorage.getItem('glawnet_leaderboard')) || [];
+    
+    // 3. Add the new entry as an object
+    leaderboardData.push({ address: playerAddress, score: newScore });
+    
+    // 4. Sort by score (Highest first)
+    leaderboardData.sort((a, b) => b.score - a.score);
+    
+    // 5. Keep top 5
+    leaderboardData = leaderboardData.slice(0, 5);
+    localStorage.setItem('glawnet_leaderboard', JSON.stringify(leaderboardData));
+
+    // 6. Build the UI to show Address AND Score
     const listDiv = document.getElementById("scoreList");
-    listDiv.innerHTML = scores.map((s, i) => 
-        `<div style="display:flex; justify-content:space-between; padding: 5px 0; border-bottom: 1px solid #333;">
-            <span>#${i+1}</span> <strong>${s}</strong>
+    listDiv.innerHTML = leaderboardData.map((entry, i) => 
+        `<div style="display:flex; justify-content:space-between; padding: 5px 0; border-bottom: 1px solid #333; font-size: 14px;">
+            <span>#${i+1} <span style="color:#888; margin-left:5px;">${entry.address}</span></span> 
+            <strong>${entry.score}</strong>
          </div>`
     ).join('');
 }
