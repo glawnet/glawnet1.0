@@ -43,31 +43,6 @@ async function connectWallet() {
 const btn = document.getElementById("connectBtn");
 btn.innerText = "WAITING...";
 
-try {
-    // Check if we are inside a wallet app
-    const provider = window.ethereum || (window.createBaseAccountSDK ? window.createBaseAccountSDK({ appName: &quot;GLAWNET&quot;, chainId: 84532 }) : null);
-    
-    if (!provider) {
-        alert(&quot;Please open this site inside the Coinbase Wallet App Browser!&quot;);
-        btn.innerText = &quot;CONNECT WALLET&quot;;
-        return;
-    }
-
-    // Request account access
-    const accounts = await (window.ethereum ? window.ethereum.request({ method: &#39;eth_requestAccounts&#39; }) : provider.getAddress());
-    const address = Array.isArray(accounts) ? accounts[0] : accounts;
-
-    if (address) {
-        btn.innerText = address.substring(0, 6) + &quot;...&quot; + address.substring(address.length - 4);
-        btn.style.color = &quot;#4ade80&quot;; 
-        btn.style.borderColor = &quot;#4ade80&quot;;
-    }
-} catch (err) {
-    console.error(err);
-    btn.innerText = &quot;CONNECT WALLET&quot;;
-}
-}
-
 function loop() {
 if (!active) return;
 x.clearRect(0, 0, 400, 600);
