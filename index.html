@@ -3,13 +3,12 @@
 <html>
 <head>
 <title>GLAWNET</title>
-<script src="https://unpkg.com/@base-org/account/dist/base-account.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@base-org/account@latest/dist/base-account.min.js"></script>
 <style>
 body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
 canvas { background: #0a0a0a; display: block; margin: 0 auto; border-bottom: 5px solid #0052FF; touch-action: none; }
 #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; display: none; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; }
 button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 20px; font-weight: bold; width: 100%; border-radius: 12px; }
-/* Style for the new Connect Button */
 #connectBtn { position: absolute; top: 15px; right: 15px; padding: 10px 15px; background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; font-size: 12px; width: auto; z-index: 1000; }
 </style>
 </head>
@@ -39,21 +38,33 @@ var score = 0; var active = true; var speed = 6;
 var p = { x: 180, y: 500, w: 40, h: 40 };
 var obs = [];
 
-// NEW: Connect Wallet Logic
+// Fallback Wallet Connection
 async function connectWallet() {
 const btn = document.getElementById("connectBtn");
-btn.innerText = "CONNECTING...";
+btn.innerText = "WAITING...";
+
 try {
-const base = window.createBaseAccountSDK({ appName: "GLAWNET", chainId: 84532 });
-const address = await base.getAddress();
-if (address) {
-btn.innerText = address.substring(0, 6) + "..." + address.substring(address.length - 4);
-btn.style.color = "#4ade80";
-btn.style.borderColor = "#4ade80";
-}
+    // Check if we are inside a wallet app
+    const provider = window.ethereum || (window.createBaseAccountSDK ? window.createBaseAccountSDK({ appName: &quot;GLAWNET&quot;, chainId: 84532 }) : null);
+    
+    if (!provider) {
+        alert(&quot;Please open this site inside the Coinbase Wallet App Browser!&quot;);
+        btn.innerText = &quot;CONNECT WALLET&quot;;
+        return;
+    }
+
+    // Request account access
+    const accounts = await (window.ethereum ? window.ethereum.request({ method: &#39;eth_requestAccounts&#39; }) : provider.getAddress());
+    const address = Array.isArray(accounts) ? accounts[0] : accounts;
+
+    if (address) {
+        btn.innerText = address.substring(0, 6) + &quot;...&quot; + address.substring(address.length - 4);
+        btn.style.color = &quot;#4ade80&quot;; 
+        btn.style.borderColor = &quot;#4ade80&quot;;
+    }
 } catch (err) {
-btn.innerText = "CONNECT WALLET";
-console.log("Connect failed");
+    console.error(err);
+    btn.innerText = &quot;CONNECT WALLET&quot;;
 }
 }
 
@@ -83,7 +94,7 @@ p.x = (e.touches[0].clientX - rect.left) * (400 / rect.width) - 20;
 
 async function payAndSave() {
 const btn = document.getElementById("payBtn");
-btn.innerText = "Processing...";
+btn.innerText = "OPENING WALLET...";
 try {
 const base = window.createBaseAccountSDK({ appName: "GLAWNET", chainId: 84532 });
 await base.pay({
@@ -93,13 +104,12 @@ currency: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
 });
 alert("Score Saved!"); location.reload();
 } catch (err) {
-alert("Check your wallet for the payment prompt.");
+alert("Payment window did not open. Ensure you are on Base Sepolia Network.");
 btn.innerText = "SAVE SCORE ($0.10)";
 }
 }
 
 loop();
-// Try to connect automatically when game starts
 window.onload = connectWallet;
 </script>
 
