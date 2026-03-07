@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <title>GLAWNET</title>
-<script src="https://unpkg.com/@base-org/account/dist/base-account.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
 body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
 canvas { background: #0a0a0a; display: block; margin: 0 auto; border-bottom: 5px solid #0052FF; touch-action: none; }
-#menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; display: none; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; }
-button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 20px; font-weight: bold; width: 100%; border-radius: 12px; }
-/* Style for the new Connect Button */
+#menu, #startMenu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; width: 280px; }
+button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 20px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; }
 #connectBtn { position: absolute; top: 15px; right: 15px; padding: 10px 15px; background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; font-size: 12px; width: auto; z-index: 1000; }
+#leaderboard { background: #111; padding: 20px; border: 2px solid #4ade80; border-radius: 20px; margin-top: 15px; }
 </style>
 </head>
 <body>
@@ -18,175 +17,142 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 <button id="connectBtn" onclick="connectWallet()">CONNECT WALLET</button>
 
 <div style="position: absolute; top: 20px; width: 100%;">
-<h1 style="color:#0052FF; margin: 0;">GLAWNET</h1>
-<p>Score: <span id="s">0</span></p>
+    <h1 style="color:#0052FF; margin: 0;">GLAWNET</h1>
+    <p>Score: <span id="s">0</span></p>
 </div>
 
 <canvas id="g"></canvas>
-    
-<div id="menu">
-    <div id="startMenu" class="ui-box">
-    <h1 style="color: #4ade80;">GLAWNET</h1>
-    <p>Avoid the red blocks!</p>
+
+<div id="startMenu">
+    <h2 style="color: #0052FF;">READY?</h2>
+    <p>Avoid the red squares.</p>
     <button onclick="startGame()">START GAME</button>
 </div>
-<h2 style="color: #FF3B30;">CRASHED!</h2>
-    <div id="leaderboard" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 20px; border: 2px solid #4ade80; display: none; border-radius: 20px; width: 280px; z-index: 101;">
-    <h2 style="color: #4ade80; margin-top: 0;">TOP SCORES</h2>
-    <div id="scoreList" style="text-align: left; margin-bottom: 20px;"></div>
-    <button onclick="location.reload()" style="background:#4ade80;">PLAY AGAIN</button>
-</div>
-<p>Final Score: <span id="fs">0</span></p>
-<button id="payBtn" onclick="payAndSave()">SAVE SCORE</button>
-<button onclick="location.reload()" style="background:none; text-decoration:underline; color:#666; margin-top:10px;">Try Again</button>
+
+<div id="menu" style="display:none;">
+    <h2 style="color: #FF3B30;">CRASHED!</h2>
+    <p>Final Score: <span id="fs">0</span></p>
+    
+    <div id="leaderboard" style="display: none;">
+        <h2 style="color: #4ade80; margin-top: 0;">TOP SCORES</h2>
+        <div id="scoreList" style="text-align: left; margin-bottom: 20px;"></div>
+    </div>
+
+    <button id="payBtn" onclick="payAndSave()">SAVE SCORE ($0.01)</button>
+    <button onclick="resetGame()" style="background:none; text-decoration:underline; color:#666;">Try Again Free</button>
 </div>
 
 <script>
-let gameActive = false; // Start as FALSE
-let gameStarted = false; // Track if the loop is already running
-
-function startGame() {
-    // 1. Hide the start menu
-    document.getElementById("startMenu").style.display = "none";
-    
-    // 2. Activate the game
-    gameActive = true;
-    
-    // 3. Only trigger the loops if it's the first time
-    if (!gameStarted) {
-        gameStarted = true;
-        spawn();
-        draw();
-    }
-}
-    
 var c = document.getElementById("g");
 var x = c.getContext("2d");
 c.width = 400; c.height = 600;
-var score = 0; var active = true; var speed = 6;
+
+var score = 0; 
+var active = false; // Changed to false to prevent auto-start
+var speed = 6;
 var p = { x: 180, y: 500, w: 40, h: 40 };
 var obs = [];
 
-// NEW: Connect Wallet Logic
+// NEW: Start Game Trigger
+function startGame() {
+    document.getElementById("startMenu").style.display = "none";
+    active = true;
+    loop();
+}
+
+// NEW: Reset Game (Allows playing again without refresh)
+function resetGame() {
+    score = 0;
+    speed = 6;
+    obs = [];
+    p.x = 180;
+    active = true;
+    document.getElementById("s").innerText = "0";
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("leaderboard").style.display = "none";
+    loop();
+}
+
 async function connectWallet() {
     const btn = document.getElementById("connectBtn");
     btn.innerText = "LINKING...";
-    
     try {
-        // 1. Check for OKX Wallet specifically, then Fallback to Base/Ethereum
         const provider = window.okxwallet || window.ethereum;
-
-        if (!provider) {
-            alert("No wallet found! Please install OKX Wallet or use the Coinbase Wallet App.");
-            btn.innerText = "CONNECT WALLET";
-            return;
-        }
-
-        // 2. Request account access (Works for OKX and others)
+        if (!provider) { alert("Wallet not found!"); btn.innerText = "CONNECT WALLET"; return; }
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const address = accounts[0];
-
         if (address) {
-            // Success! Update UI
             btn.innerText = address.substring(0, 6) + "..." + address.substring(address.length - 4);
-            btn.style.background = "#000000"; // OKX Style Black
-            btn.style.borderColor = "#ffffff";
-            console.log("Connected to OKX/Web3 Wallet: " + address);
+            btn.style.background = "#000"; btn.style.borderColor = "#fff";
         }
-    } catch (err) {
-        alert("Connection Error: " + err.message);
-        btn.innerText = "CONNECT WALLET";
-    }
+    } catch (err) { alert("Connection Error: " + err.message); btn.innerText = "CONNECT WALLET"; }
 }
 
 function loop() {
-if (!active) return;
-x.clearRect(0, 0, 400, 600);
-x.fillStyle = "#0052FF";
-x.fillRect(p.x, p.y, p.w, p.h);
-if (Math.random() < 0.03) { obs.push({ x: Math.random() * 360, y: -40, w: 40, h: 40 }); }
-for (var i = 0; i < obs.length; i++) {
-var o = obs[i]; o.y += speed;
-x.fillStyle = "#FF3B30";
-x.fillRect(o.x, o.y, o.w, o.h);
-if (p.x < o.x + o.w && p.x + p.w > o.x && p.y < o.y + o.h && p.y + p.h > o.y) {
-active = false; document.getElementById("menu").style.display = "block";
-document.getElementById("fs").innerText = score;
-}
-if (o.y > 600) { obs.splice(i, 1); score++; document.getElementById("s").innerText = score; speed += 0.05; }
-}
-requestAnimationFrame(loop);
+    if (!active) return;
+    x.clearRect(0, 0, 400, 600);
+    x.fillStyle = "#0052FF";
+    x.fillRect(p.x, p.y, p.w, p.h);
+
+    if (Math.random() < 0.03) { obs.push({ x: Math.random() * 360, y: -40, w: 40, h: 40 }); }
+
+    for (var i = obs.length - 1; i >= 0; i--) {
+        var o = obs[i]; o.y += speed;
+        x.fillStyle = "#FF3B30";
+        x.fillRect(o.x, o.y, o.w, o.h);
+
+        if (p.x < o.x + o.w && p.x + p.w > o.x && p.y < o.y + o.h && p.y + p.h > o.y) {
+            active = false; 
+            document.getElementById("menu").style.display = "block";
+            document.getElementById("fs").innerText = score;
+        }
+
+        if (o.y > 600) { 
+            obs.splice(i, 1); 
+            score++; 
+            document.getElementById("s").innerText = score; 
+            speed += 0.05; 
+        }
+    }
+    requestAnimationFrame(loop);
 }
 
 window.addEventListener("touchmove", function(e) {
     var rect = c.getBoundingClientRect();
-    
-    // 1. Calculate the raw position based on touch
     var rawX = (e.touches[0].clientX - rect.left) * (400 / rect.width) - 20;
-
-    // 2. APPLY THE BOUNDARIES
-    // Math.max(0, ...) ensures it doesn't go below 0 (left wall)
-    // Math.min(..., 360) ensures it doesn't go past 360 (right wall, 400 - 40 box width)
     p.x = Math.max(0, Math.min(rawX, 360));
-
-    // Prevent the screen from scrolling while playing
     e.preventDefault(); 
 }, {passive: false});
 
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
-    
-    // THE GO-LIVE SETTINGS
-    const MAINNET_CHAIN_ID = '0x2105'; // Base Mainnet
+    const MAINNET_CHAIN_ID = '0x2105'; 
     const REAL_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-    const amountHex = "0x2710"; // Exactly $0.01
+    const amountHex = "0x2710"; 
 
     try {
-        // Ensure user is on REAL BASE
-        await provider.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: MAINNET_CHAIN_ID }],
-        });
-
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: MAINNET_CHAIN_ID }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
-        const data = "0xa9059cbb" + 
-                     "000000000000000000000000764d0e278d33D391466092A10AABF616B7C3f533" + // Your wallet
-                     amountHex.replace("0x", "").padStart(64, "0");
+        const data = "0xa9059cbb" + "000000000000000000000000764d0e278d33D391466092A10AABF616B7C3f533" + amountHex.replace("0x", "").padStart(64, "0");
 
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
-            params: [{
-                from: accounts[0],
-                to: REAL_USDC,
-                data: data,
-                chainId: MAINNET_CHAIN_ID
-            }],
+            params: [{ from: accounts[0], to: REAL_USDC, data: data, chainId: MAINNET_CHAIN_ID }],
         });
 
-        alert("REAL PAYMENT SENT: " + txHash);
-    } catch (e) {
-        alert("Payment Error: " + e.message);
-    }
+        if (txHash) {
+            showLeaderboard();
+        }
+    } catch (e) { alert("Payment Error: " + e.message); }
 }
-    
-loop();
-// Try to connect automatically when game starts
-window.onload = connectWallet;
-    
-    function updateLeaderboard(newScore) {
-    // 1. Get existing scores or start fresh
+
+function updateLeaderboard(newScore) {
     let scores = JSON.parse(localStorage.getItem('glawnet_scores')) || [];
-    
-    // 2. Add new score and sort (Highest first)
     scores.push(newScore);
     scores.sort((a, b) => b - a);
-    
-    // 3. Keep only top 5
     scores = scores.slice(0, 5);
     localStorage.setItem('glawnet_scores', JSON.stringify(scores));
 
-    // 4. Build the list for the UI
     const listDiv = document.getElementById("scoreList");
     listDiv.innerHTML = scores.map((s, i) => 
         `<div style="display:flex; justify-content:space-between; padding: 5px 0; border-bottom: 1px solid #333;">
@@ -195,13 +161,12 @@ window.onload = connectWallet;
     ).join('');
 }
 
-// Update your existing game-over logic to show this
 function showLeaderboard() {
-    document.getElementById("menu").style.display = "none";
     document.getElementById("leaderboard").style.display = "block";
     updateLeaderboard(score);
 }
-</script>
 
+window.onload = connectWallet;
+</script>
 </body>
 </html>
