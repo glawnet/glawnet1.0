@@ -119,6 +119,14 @@ window.addEventListener("touchmove", function(e) {
     e.preventDefault(); 
 }, {passive: false});
 
+    // Add this for PC (Mouse) Support
+window.addEventListener("mousemove", function(e) {
+    if (!active) return; // Only move if the game is running
+    var rect = c.getBoundingClientRect();
+    // Use clientX for mouse instead of touches[0].clientX
+    p.x = Math.max(0, Math.min((e.clientX - rect.left) * (400 / rect.width) - 20, 360));
+});
+
 function toggleLeaderboard() {
     const tab = document.getElementById("leaderboardTab");
     tab.style.display = (tab.style.display === "none") ? "block" : "none";
