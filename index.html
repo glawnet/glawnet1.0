@@ -209,9 +209,10 @@ async function payAndSave() {
         
         // 1. APPROVE Step ($0.01)
         // 10,000 units (6 decimals) -> hex: 2710
-        const approveData = "0x095ea7b3" + 
-                          GLAWNET_ADDR.substring(2).padStart(64, '0') + 
-                          "0000000000000000000000000000000000000000000000000000000000002710";
+        const amountHex = "2710"; // 10,000 units = $0.01
+const approveData = "0x095ea7b3" + 
+                  GLAWNET_ADDR.substring(2).toLowerCase().padStart(64, '0') + 
+                  amountHex.padStart(64, '0');
 
         await provider.request({ 
             method: 'eth_sendTransaction', 
