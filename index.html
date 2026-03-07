@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
 body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
-/* Added transition for the gold flash effect */
 canvas { 
     background: #0a0a0a; 
     display: block; 
@@ -26,7 +25,9 @@ canvas {
     z-index: 1001;
 }
 
-#lbBtn, #connectBtn { 
+#walletActions { display: flex; gap: 5px; }
+
+#lbBtn, #connectBtn, #disconnectBtn { 
     position: static; 
     padding: 10px 12px;
     font-size: 11px;
@@ -43,6 +44,7 @@ canvas {
 button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 15px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; }
 #lbBtn { background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; color: #4ade80; }
 #connectBtn { background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; }
+#disconnectBtn { background: rgba(255, 59, 48, 0.1); border: 1px solid #FF3B30; color: #FF3B30; display: none; }
 #leaderboardTab { border-color: #4ade80; box-shadow: 0 0 30px #4ade80; }
 </style>
 </head>
@@ -50,7 +52,10 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 
 <div class="header">
     <button id="lbBtn" onclick="toggleLeaderboard()">LEADERBOARD</button>
-    <button id="connectBtn" onclick="connectWallet()">CONNECT WALLET</button>
+    <div id="walletActions">
+        <button id="connectBtn" onclick="connectWallet()">CONNECT WALLET</button>
+        <button id="disconnectBtn" onclick="disconnectWallet()">DISCONNECT</button>
+    </div>
 </div>
 
 <div class="title-area">
@@ -85,7 +90,6 @@ c.width = 400; c.height = 600;
 var score = 0, active = false, speed = 10, p = { x: 180, y: 500, w: 40, h: 40 }, obs = [];
 
 const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-// YOUR NEW MAINNET ADDRESS
 const GLAWNET_ADDR = "0xB5368F7979d1586E5368e6d0eBf6FF2E7b391B4f"; 
 
 function drawPlayer() {
@@ -97,32 +101,44 @@ function drawPlayer() {
 function startGame() { document.getElementById("startMenu").style.display = "none"; active = true; loop(); }
 function resetGame() { 
     score = 0; speed = 10; obs = []; p.x = 180; active = true; 
-    c.style.borderColor = "#0052FF"; // Reset border color
+    c.style.borderColor = "#0052FF";
     document.getElementById("s").innerText = "0"; 
     document.getElementById("menu").style.display = "none"; 
     loop(); 
 }
 
 async function connectWallet() {
-    const btn = document.getElementById("connectBtn");
+    const connBtn = document.getElementById("connectBtn");
+    const discBtn = document.getElementById("disconnectBtn");
     try {
         const provider = window.okxwallet || window.ethereum;
         if (!provider) return;
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         if (accounts[0]) {
-            btn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
-            btn.style.background = "#000"; btn.style.borderColor = "#fff";
+            connBtn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
+            connBtn.style.background = "#000"; connBtn.style.borderColor = "#fff";
+            connBtn.disabled = true;
+            discBtn.style.display = "inline-block";
         }
     } catch (err) { console.log(err); }
+}
+
+function disconnectWallet() {
+    const connBtn = document.getElementById("connectBtn");
+    const discBtn = document.getElementById("disconnectBtn");
+    connBtn.innerText = "CONNECT WALLET";
+    connBtn.style.background = "rgba(0,82,255,0.2)";
+    connBtn.style.borderColor = "#0052FF";
+    connBtn.disabled = false;
+    discBtn.style.display = "none";
+    alert("Wallet UI disconnected.");
 }
 
 function loop() {
     if (!active) return;
     x.clearRect(0, 0, 400, 600);
     x.fillStyle = "#0052FF"; x.fillRect(p.x, p.y, p.w, p.h);
-    
     if (Math.random() < 0.06) { obs.push({ x: Math.random() * 360, y: -40, w: 40, h: 40 }); }
-    
     for (var i = obs.length - 1; i >= 0; i--) {
         var o = obs[i]; o.y += speed;
         x.fillStyle = "#FF3B30"; x.fillRect(o.x, o.y, o.w, o.h);
@@ -136,10 +152,8 @@ function loop() {
             score++; 
             document.getElementById("s").innerText = score; 
             speed += 0.15; 
-            
-            // Celebration Flash every 10 points
             if (score % 10 === 0) {
-                c.style.borderColor = "#FFD700"; // Gold
+                c.style.borderColor = "#FFD700";
                 setTimeout(() => { if(active) c.style.borderColor = "#0052FF"; }, 500);
             }
         }
@@ -204,55 +218,35 @@ async function renderLeaderboard() {
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
     try {
-        // Ensure we are on Base Mainnet (0x2105)
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const userAddr = accounts[0];
 
-        // 1. MANDATORY APPROVAL ($0.01)
-        // Function Selector for approve(address,uint256) is 0x095ea7b3
+        // MANDATORY APPROVAL ($0.01)
         const spender = GLAWNET_ADDR.toLowerCase().replace("0x", "").padStart(64, '0');
-        const amount = "2710".padStart(64, '0'); // 10,000 units = $0.01 USDC
+        const amount = "2710".padStart(64, '0'); // 10,000 units = $0.01
         const approveData = "0x095ea7b3" + spender + amount;
 
-        console.log("Requesting $0.01 Approval...");
-        
         await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ 
-                from: userAddr, 
-                to: USDC_ADDR, 
-                data: approveData,
-                value: '0x0' // Explicitly 0 ETH
-            }] 
+            params: [{ from: userAddr, to: USDC_ADDR, data: approveData, value: '0x0' }] 
         });
 
-        // 2. SAVE SCORE TO CONTRACT
-        // Function Selector for saveScore(uint256) is 0x98555986
+        // SAVE SCORE
         let hexScore = score.toString(16).padStart(64, '0');
         const saveScoreData = "0x98555986" + hexScore; 
 
-        console.log("Saving Score to Blockchain...");
-
         const tx = await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ 
-                from: userAddr, 
-                to: GLAWNET_ADDR, 
-                data: saveScoreData,
-                value: '0x0'
-            }] 
+            params: [{ from: userAddr, to: GLAWNET_ADDR, data: saveScoreData, value: '0x0' }] 
         });
 
         if (tx) {
-            alert("Success! $0.01 Paid and Score Saved.");
+            alert("Success! Score Saved.");
             document.getElementById("menu").style.display = "none";
             toggleLeaderboard();
         }
-    } catch (e) { 
-        alert("Transaction Failed: " + e.message); 
-        console.error(e);
-    }
+    } catch (e) { alert("Error: " + e.message); }
 }
 
 window.onload = function() {
