@@ -111,45 +111,39 @@ window.addEventListener("touchmove", function(e) {
 }, {passive: false});
 
 async function payAndSave() {
-    const btn = document.getElementById("payBtn");
-    btn.innerText = "OPENING USDC PAY...";
+    const provider = window.okxwallet || window.ethereum;
+    
+    // THE GO-LIVE SETTINGS
+    const MAINNET_CHAIN_ID = '0x2105'; // Base Mainnet
+    const REAL_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    const amountHex = "0x2710"; // Exactly $0.01
 
     try {
-        const provider = window.okxwallet || window.ethereum;
+        // Ensure user is on REAL BASE
+        await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: MAINNET_CHAIN_ID }],
+        });
+
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const fromAddress = accounts[0];
-
-        // 1. REAL MAINNET DETAILS
-        const usdcAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Official Native USDC on Base
-        const receiver = "0x764d0e278d33D391466092A10AABF616B7C3f533"; // Your wallet address
-        const amountHex = "0x186A0"; // This is exactly $0.10 (100,000 units)
-
-        // 2. THE COMMAND (ERC-20 transfer function)
-        // 0xa9059cbb is the hex code for 'transfer(address,uint256)'
+        
         const data = "0xa9059cbb" + 
-                     receiver.replace("0x", "").padStart(64, "0") + 
+                     "000000000000000000000000764d0e278d33D391466092A10AABF616B7C3f533" + // Your wallet
                      amountHex.replace("0x", "").padStart(64, "0");
-
-        // 3. SEND TRANSACTION
-        const txParams = {
-            from: fromAddress,
-            to: usdcAddress, // Interaction is WITH the USDC contract
-            data: data,      // The data tells it to send $0.10 to your address
-            chainId: '0x2105' // Forces Base Mainnet (8453)
-        };
 
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
-            params: [txParams],
+            params: [{
+                from: accounts[0],
+                to: REAL_USDC,
+                data: data,
+                chainId: MAINNET_CHAIN_ID
+            }],
         });
 
-        if (txHash) {
-            alert("SUCCESS! $0.10 USDC Sent. Score Recorded.");
-            location.reload();
-        }
-    } catch (err) {
-        alert("Payment Error: " + err.message);
-        btn.innerText = "SAVE SCORE";
+        alert("REAL PAYMENT SENT: " + txHash);
+    } catch (e) {
+        alert("Payment Error: " + e.message);
     }
 }
     
