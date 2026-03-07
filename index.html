@@ -27,7 +27,7 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 <div id="menu">
 <h2 style="color: #FF3B30;">CRASHED!</h2>
 <p>Final Score: <span id="fs">0</span></p>
-<button id="payBtn" onclick="payAndSave()">SAVE SCORE ($0.10)</button>
+<button id="payBtn" onclick="payAndSave()">SAVE SCORE</button>
 <button onclick="location.reload()" style="background:none; text-decoration:underline; color:#666; margin-top:10px;">Try Again</button>
 </div>
 
@@ -91,8 +91,18 @@ requestAnimationFrame(loop);
 }
 
 window.addEventListener("touchmove", function(e) {
-var rect = c.getBoundingClientRect();
-p.x = (e.touches[0].clientX - rect.left) * (400 / rect.width) - 20;
+    var rect = c.getBoundingClientRect();
+    
+    // 1. Calculate the raw position based on touch
+    var rawX = (e.touches[0].clientX - rect.left) * (400 / rect.width) - 20;
+
+    // 2. APPLY THE BOUNDARIES
+    // Math.max(0, ...) ensures it doesn't go below 0 (left wall)
+    // Math.min(..., 360) ensures it doesn't go past 360 (right wall, 400 - 40 box width)
+    p.x = Math.max(0, Math.min(rawX, 360));
+
+    // Prevent the screen from scrolling while playing
+    e.preventDefault(); 
 }, {passive: false});
 
 async function payAndSave() {
