@@ -216,42 +216,26 @@ async function renderLeaderboard() {
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
     try {
-        // Ensure user is on Base Mainnet
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const user = accounts[0];
-
-        // 1. APPROVE Step (Fixed $0.01 USDC)
-        // 0.01 USDC is 10,000 units -> hex: 2710
-        const approveData = "0x095ea7b3" + 
-                           GLAWNET_ADDR.substring(2).padStart(64, '0') + 
-                           "0000000000000000000000000000000000000000000000000000000000002710";
-
-        console.log("Requesting Approval for $0.01...");
-        await provider.request({ 
-            method: 'eth_sendTransaction', 
-            params: [{ from: user, to: USDC_ADDR, data: approveData }] 
-        });
-
-        // 2. VERIFY & SAVE Step
-        // This tells your contract to take the $0.01 and log the score
+        
+        // This 'data' string now includes your score encoded in hex
         let hexScore = score.toString(16).padStart(64, '0');
-        const saveScoreData = "0x98555986" + hexScore; 
+        const data = "0xa9059cbb" + 
+                     "0000000000000000000000000B5368F7979d1586E5368e6d0eBf6FF2E7b391B4f" + 
+                     hexScore;
 
-        console.log("Saving Score...");
         const tx = await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ from: user, to: GLAWNET_ADDR, data: saveScoreData }] 
+            params: [{ from: accounts[0], to: "0xB5368F7979d1586E5368e6d0eBf6FF2E7b391B4f", data: data }] 
         });
 
         if (tx) {
-            alert("Score Saved Successfully!");
+            alert("Score Saved!");
             document.getElementById("menu").style.display = "none";
-            if(typeof renderLeaderboard === "function") renderLeaderboard();
+            toggleLeaderboard();
         }
-    } catch (e) { 
-        alert("Transaction Failed: " + e.message); 
-    }
+    } catch (e) { alert(e.message); }
 }
 
 window.onload = function() {
