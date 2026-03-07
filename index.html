@@ -114,55 +114,40 @@ function toggleLeaderboard() {
 
 async function renderLeaderboard() {
     const list = document.getElementById("scoreList");
-    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing with Base...</p>";
-
-    const ALCHEMY_URL = "https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE"; 
-    const MY_WALLET = "0x764d0e278d33D391466092A10AABF616B7C3f533";
-
+    list.innerHTML = "<p style='text-align:center;'>Syncing Scores...</p>";
+    
     try {
-        const response = await fetch(ALCHEMY_URL, {
+        const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: "2.0", id: 1,
-                method: "alchemy_getAssetTransfers",
-                params: [{
-                    fromBlock: "0x0", toAddress: MY_WALLET,
-                    category: ["erc20"], withMetadata: true, excludeZeroValue: true
-                }]
+            body: JSON.stringify({ 
+                jsonrpc: "2.0", id: 1, 
+                method: "alchemy_getAssetTransfers", 
+                params: [{ toAddress: "0x764d0e278d33D391466092A10AABF616B7C3f533", category: ["erc20"], excludeZeroValue: true }] 
             })
         });
-
-        const data = await response.json();
-        const transfers = data.result.transfers;
-
-        if (!transfers || transfers.length === 0) {
-            list.innerHTML = "<p style='color:#666; text-align:center;'>No global scores yet!</p>";
-            return;
-        }
-
-        // Show top 5 unique players
-        let html = "";
-        let seen = new Set();
+        const d = await res.json(); 
+        let html = "", seen = new Set();
         let displayCount = 0;
 
-        for(let t of transfers) {
-            if(displayCount >= 5) break;
-            if(!seen.has(t.from)) {
-                seen.add(t.from);
+        // .reverse() ensures we see the newest players first
+        d.result.transfers.reverse().forEach(t => { 
+            if (displayCount < 5 && !seen.has(t.from)) { 
+                seen.add(t.from); 
                 displayCount++;
-                let shortAddr = t.from.substring(0, 6) + "..." + t.from.substring(t.from.length - 4);
+                
+                // We show the "Value" of the payment as a placeholder for the score
+                // Or you can fetch the real score from your contract here
+                let displayScore = t.value || "0"; 
+                
                 html += `
-                    <div style="display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid #333; font-size: 13px;">
-                        <span>#${displayCount} <span style="color:#4ade80; margin-left:8px;">${shortAddr}</span></span> 
-                        <strong style="color:#0052FF;">VERIFIED</strong>
-                    </div>`;
+                <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333; font-size:12px;">
+                    <span>#${displayCount} ${t.from.slice(0,6)}...${t.from.slice(-4)}</span>
+                    <strong style="color:#4ade80;">SCORE: ${displayScore}</strong>
+                </div>`; 
             }
-        }
-        list.innerHTML = html;
-    } catch (e) {
-        list.innerHTML = "<p style='color:red;'>Connection Error.</p>";
-    }
+        });
+        list.innerHTML = html || "No global scores yet!";
+    } catch (e) { list.innerHTML = "Error loading data."; }
 }
 
 async function payAndSave() {
