@@ -214,52 +214,40 @@ async function renderLeaderboard() {
 }
 
 async function payAndSave() {
-    const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-    const GLAWNET = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; 
     const provider = window.okxwallet || window.ethereum;
+    
+    // THE GO-LIVE SETTINGS
+    const MAINNET_CHAIN_ID = '0x2105'; // Base Mainnet
+    const REAL_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    const amountHex = "0x2710"; // Exactly $0.01
 
     try {
-        // 1. Force Base Network
-        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const me = accounts[0];
-
-        // 2. APPROVE $0.01 (10,000 units)
-        // This is the most common cause of "Third Party Error"
-        const approveHex = "0x095ea7b3" + 
-                           GLAWNET.substring(2).padStart(64, '0') + 
-                           "0000000000000000000000000000000000000000000000000000000000002710";
-
-        console.log("Sending Approval...");
-        const aTx = await provider.request({ 
-            method: 'eth_sendTransaction', 
-            params: [{ from: me, to: USDC, data: approveHex }] 
+        // Ensure user is on REAL BASE
+        await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: MAINNET_CHAIN_ID }],
         });
 
-        // 3. SAVE SCORE
-        if (aTx) {
-            alert("Step 1 Success! Now click OK for the Final Save.");
-            
-            // Convert score to 32-byte hex
-            let sHex = score.toString(16).padStart(64, '0');
-            const saveHex = "0x98555986" + sHex; 
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        
+        const data = "0xa9059cbb" + 
+                     "0000000000000000000000000048e7B38e45eEFdA3b44132BCD63f130109bA84" + // Your wallet
+                     amountHex.replace("0x", "").padStart(48, "0");
 
-            const tx = await provider.request({ 
-                method: 'eth_sendTransaction', 
-                params: [{ from: me, to: GLAWNET, data: saveHex }] 
-            });
+        const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: accounts[0],
+                to: REAL_USDC,
+                data: data,
+                chainId: MAINNET_CHAIN_ID
+            }],
+        });
 
-            if (tx) {
-                alert("DONE! Score Saved.");
-                document.getElementById("menu").style.display = "none";
-                if(window.renderLeaderboard) renderLeaderboard();
-            }
-        }
-    } catch (e) { 
-        console.error(e);
-        alert("Wallet Error: " + e.message); 
+        alert("REAL PAYMENT SENT: " + txHash);
+    } catch (e) {
+        alert("Payment Error: " + e.message);
     }
-}
 window.onload = function() {
     connectWallet();
     drawPlayer(); 
