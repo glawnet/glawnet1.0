@@ -214,56 +214,37 @@ async function renderLeaderboard() {
 }
 
 async function payAndSave() {
-    // 1. Define required addresses inside to prevent "Variable Not Found"
     const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
     const GLAWNET_ADDR = "0xB5368F7979d1586E5368e6d0eBf6FF2E7b391B4f"; 
-
     const provider = window.okxwallet || window.ethereum;
-    if (!provider) { alert("Wallet not found!"); return; }
 
     try {
-        // Ensure user is on Base Mainnet (0x2105)
-        await provider.request({ 
-            method: 'wallet_switchEthereumChain', 
-            params: [{ chainId: '0x2105' }] 
-        });
-        
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const user = accounts[0];
 
-        // 2. STEP 1: APPROVE EXACTLY $0.01 USDC
-        // '0x095ea7b3' = approve function
-        // '00002710' at the end = 10,000 units ($0.01)
+        // STEP 1: APPROVE $0.01 USDC (10,000 units)
+        // Ensure this hex is exactly '2710' at the end
         const approveData = "0x095ea7b3" + 
                            GLAWNET_ADDR.substring(2).padStart(64, '0') + 
                            "0000000000000000000000000000000000000000000000000000000000002710";
 
-        console.log("Requesting $0.01 Approval...");
         await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ from: user, to: USDC_ADDR, data: approveData }] 
+            params: [{ from: accounts[0], to: USDC_ADDR, data: approveData }] 
         });
 
-        // 3. STEP 2: SAVE SCORE
-        // '0x98555986' = verifyAndSave function
+        // STEP 2: SAVE SCORE
         let hexScore = score.toString(16).padStart(64, '0');
         const saveScoreData = "0x98555986" + hexScore; 
 
-        console.log("Saving score...");
         const tx = await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ from: user, to: GLAWNET_ADDR, data: saveScoreData }] 
+            params: [{ from: accounts[0], to: GLAWNET_ADDR, data: saveScoreData }] 
         });
 
-        if (tx) {
-            alert("Score successfully saved!");
-            document.getElementById("menu").style.display = "none";
-            // Refresh leaderboard if function exists
-            if (typeof renderLeaderboard === "function") renderLeaderboard();
-        }
+        if (tx) { alert("Score Saved!"); }
     } catch (e) { 
-        console.error(e);
-        alert("Transaction Error: " + e.message); 
+        alert("Execution Error: " + e.message); 
     }
 }
 
