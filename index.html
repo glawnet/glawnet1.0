@@ -33,7 +33,7 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 
 <div id="leaderboardTab" class="ui-box" style="display: none;">
     <h2 style="color: #4ade80; margin-top: 0;">GLOBAL RUNNERS</h2>
-    <div id="scoreList" style="text-align: left; margin-bottom: 20px;"></div>
+    <div id="scoreList" style="text-align: left; margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
     <button onclick="toggleLeaderboard()" style="background: #4ade80;">CLOSE</button>
 </div>
 
@@ -45,24 +45,12 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 </div>
 
 <script>
-var c = document.getElementById("g");
-var x = c.getContext("2d");
+var c = document.getElementById("g"), x = c.getContext("2d");
 c.width = 400; c.height = 600;
-
 var score = 0, active = false, speed = 6, p = { x: 180, y: 500, w: 40, h: 40 }, obs = [];
 
-function startGame() {
-    document.getElementById("startMenu").style.display = "none";
-    active = true;
-    loop();
-}
-
-function resetGame() {
-    score = 0; speed = 6; obs = []; p.x = 180; active = true;
-    document.getElementById("s").innerText = "0";
-    document.getElementById("menu").style.display = "none";
-    loop();
-}
+function startGame() { document.getElementById("startMenu").style.display = "none"; active = true; loop(); }
+function resetGame() { score = 0; speed = 6; obs = []; p.x = 180; active = true; document.getElementById("s").innerText = "0"; document.getElementById("menu").style.display = "none"; loop(); }
 
 async function connectWallet() {
     const btn = document.getElementById("connectBtn");
@@ -71,7 +59,7 @@ async function connectWallet() {
         if (!provider) return;
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         if (accounts[0]) {
-            btn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(accounts[0].length - 4);
+            btn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
             btn.style.background = "#000"; btn.style.borderColor = "#fff";
         }
     } catch (err) { console.log(err); }
@@ -97,57 +85,51 @@ function loop() {
 
 window.addEventListener("touchmove", function(e) {
     var rect = c.getBoundingClientRect();
-    var rawX = (e.touches[0].clientX - rect.left) * (400 / rect.width) - 20;
-    p.x = Math.max(0, Math.min(rawX, 360));
+    p.x = Math.max(0, Math.min((e.touches[0].clientX - rect.left) * (400 / rect.width) - 20, 360));
     e.preventDefault(); 
 }, {passive: false});
 
 function toggleLeaderboard() {
     const tab = document.getElementById("leaderboardTab");
-    if (tab.style.display === "none") {
-        tab.style.display = "block";
-        renderLeaderboard();
-    } else {
-        tab.style.display = "none";
-    }
+    tab.style.display = (tab.style.display === "none") ? "block" : "none";
+    if (tab.style.display === "block") renderLeaderboard();
 }
 
 async function renderLeaderboard() {
     const list = document.getElementById("scoreList");
-    list.innerHTML = "<p style='text-align:center;'>Syncing Scores...</p>";
+    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing High Scores...</p>";
     
     try {
         const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
             method: 'POST',
             body: JSON.stringify({ 
                 jsonrpc: "2.0", id: 1, 
-                method: "alchemy_getAssetTransfers", 
-                params: [{ toAddress: "0x764d0e278d33D391466092A10AABF616B7C3f533", category: ["erc20"], excludeZeroValue: true }] 
+                method: "alchemy_getLogs", 
+                params: [{
+                    address: "0x764d0e278d33D391466092A10AABF616B7C3f533",
+                    fromBlock: "0x0",
+                    topics: ["0x55099354924a4d29f8f2d665b6a711467554f738f7d98305f6e80b435252875d"] 
+                }] 
             })
         });
         const d = await res.json(); 
-        let html = "", seen = new Set();
-        let displayCount = 0;
+        let html = "", seen = new Set(), displayCount = 0;
 
-        // .reverse() ensures we see the newest players first
-        d.result.transfers.reverse().forEach(t => { 
-            if (displayCount < 5 && !seen.has(t.from)) { 
-                seen.add(t.from); 
-                displayCount++;
-                
-                // We show the "Value" of the payment as a placeholder for the score
-                // Or you can fetch the real score from your contract here
-                let displayScore = t.value || "0"; 
-                
-                html += `
-                <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333; font-size:12px;">
-                    <span>#${displayCount} ${t.from.slice(0,6)}...${t.from.slice(-4)}</span>
-                    <strong style="color:#4ade80;">SCORE: ${displayScore}</strong>
-                </div>`; 
+        d.result.reverse().forEach(log => {
+            let playerAddr = "0x" + log.topics[1].slice(26);
+            let hexScore = log.data === "0x" ? "0" : log.data;
+            let playerScore = parseInt(hexScore, 16);
+
+            if (displayCount < 5 && !seen.has(playerAddr)) { 
+                seen.add(playerAddr); displayCount++;
+                html += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333; font-size:12px;">
+                            <span>#${displayCount} ${playerAddr.slice(0,6)}...${playerAddr.slice(-4)}</span>
+                            <strong style="color:#4ade80;">SCORE: ${playerScore}</strong>
+                         </div>`; 
             }
         });
-        list.innerHTML = html || "No global scores yet!";
-    } catch (e) { list.innerHTML = "Error loading data."; }
+        list.innerHTML = html || "No records found.";
+    } catch (e) { list.innerHTML = "Sync Error."; }
 }
 
 async function payAndSave() {
@@ -156,25 +138,21 @@ async function payAndSave() {
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         
-        // Data for sending 0.01 USDC to your wallet
+        // This 'data' string now includes your score encoded in hex
+        let hexScore = score.toString(16).padStart(64, '0');
         const data = "0xa9059cbb" + 
                      "000000000000000000000000764d0e278d33D391466092A10AABF616B7C3f533" + 
-                     "0000000000000000000000000000000000000000000000000000000000002710";
+                     hexScore;
 
         const tx = await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ 
-                from: accounts[0], 
-                to: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 
-                data: data, 
-                chainId: '0x2105' 
-            }] 
+            params: [{ from: accounts[0], to: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", data: data }] 
         });
 
         if (tx) {
-            alert("Score Recorded on Base!");
+            alert("Score Saved!");
             document.getElementById("menu").style.display = "none";
-            toggleLeaderboard(); // Automatically open the global list
+            toggleLeaderboard();
         }
     } catch (e) { alert(e.message); }
 }
