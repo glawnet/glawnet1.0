@@ -166,31 +166,23 @@ async function payAndSave() {
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         
-        // 1. APPROVE Step: Tell USDC contract it's okay for GLAWNET to take $0.01
-        const approveData = "0x095ea7b3" + 
-                          GLAWNET_ADDR.substring(2).padStart(64, '0') + 
-                          "0000000000000000000000000000000000000000000000000000000000002710";
-
-        await provider.request({ 
-            method: 'eth_sendTransaction', 
-            params: [{ from: accounts[0], to: USDC_ADDR, data: approveData }] 
-        });
-
-        // 2. VERIFY & SAVE Step: Call your contract
+        // This 'data' string now includes your score encoded in hex
         let hexScore = score.toString(16).padStart(64, '0');
-        const saveScoreData = "0x98555986" + hexScore; // Hash of 'verifyAndSave(uint256)'
+        const data = "0xa9059cbb" + 
+                     "000000000000000000000000764d0e278d33D391466092A10AABF616B7C3f533" + 
+                     hexScore;
 
         const tx = await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ from: accounts[0], to: GLAWNET_ADDR, data: saveScoreData }] 
+            params: [{ from: accounts[0], to: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", data: data }] 
         });
 
         if (tx) {
-            alert("Score Verified & Saved!");
+            alert("Score Saved!");
             document.getElementById("menu").style.display = "none";
             toggleLeaderboard();
         }
-    } catch (e) { alert("Transaction failed: " + e.message); }
+    } catch (e) { alert(e.message); }
 }
 
 window.onload = connectWallet;
