@@ -5,9 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
 body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
-canvas { background: #0a0a0a; display: block; margin: 0 auto; border-bottom: 5px solid #0052FF; touch-action: none; }
+canvas { 
+    background: #0a0a0a; 
+    display: block; 
+    margin: 0 auto; 
+    border-bottom: 5px solid #0052FF; 
+    touch-action: none;
+    max-height: 70vh; /* Prevents canvas from being pushed off-screen on PC */
+    width: auto;
+}
 
-/* Fixed Mobile Header Layout */
 .header {
     display: flex;
     justify-content: space-between;
@@ -75,9 +82,14 @@ var c = document.getElementById("g"), x = c.getContext("2d");
 c.width = 400; c.height = 600;
 var score = 0, active = false, speed = 6, p = { x: 180, y: 500, w: 40, h: 40 }, obs = [];
 
-// Constants for Base Mainnet
 const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const GLAWNET_ADDR = "0x764d0e278d33D391466092A10AABF616B7C3f533"; // Your new contract address
+const GLAWNET_ADDR = "0x764d0e278d33D391466092A10AABF616B7C3f533"; 
+
+function drawPlayer() {
+    x.clearRect(0, 0, 400, 600);
+    x.fillStyle = "#0052FF";
+    x.fillRect(p.x, p.y, p.w, p.h);
+}
 
 function startGame() { document.getElementById("startMenu").style.display = "none"; active = true; loop(); }
 function resetGame() { score = 0; speed = 6; obs = []; p.x = 180; active = true; document.getElementById("s").innerText = "0"; document.getElementById("menu").style.display = "none"; loop(); }
@@ -113,18 +125,19 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
+// Touch controls for Mobile
 window.addEventListener("touchmove", function(e) {
     var rect = c.getBoundingClientRect();
     p.x = Math.max(0, Math.min((e.touches[0].clientX - rect.left) * (400 / rect.width) - 20, 360));
+    if (!active) drawPlayer();
     e.preventDefault(); 
 }, {passive: false});
 
-    // Add this for PC (Mouse) Support
+// Mouse controls for PC
 window.addEventListener("mousemove", function(e) {
-    if (!active) return; // Only move if the game is running
     var rect = c.getBoundingClientRect();
-    // Use clientX for mouse instead of touches[0].clientX
     p.x = Math.max(0, Math.min((e.clientX - rect.left) * (400 / rect.width) - 20, 360));
+    if (!active) drawPlayer();
 });
 
 function toggleLeaderboard() {
@@ -175,7 +188,6 @@ async function payAndSave() {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         
         // 1. APPROVE Step ($0.01)
-        // 10,000 units (6 decimals) -> hex: 2710
         const approveData = "0x095ea7b3" + 
                           GLAWNET_ADDR.substring(2).padStart(64, '0') + 
                           "0000000000000000000000000000000000000000000000000000000000002710";
@@ -202,7 +214,10 @@ async function payAndSave() {
     } catch (e) { alert("Error: " + e.message); }
 }
 
-window.onload = connectWallet;
+window.onload = function() {
+    connectWallet();
+    drawPlayer(); // Pre-draw player so it's visible on PC load
+};
 </script>
 </body>
 </html>
