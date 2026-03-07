@@ -204,36 +204,55 @@ async function renderLeaderboard() {
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
     try {
+        // Ensure we are on Base Mainnet (0x2105)
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
-        // 1. APPROVE Step ($0.01)
-        // 10,000 units (6 decimals) -> hex: 2710
-        const amountHex = "2710"; // 10,000 units = $0.01
-const approveData = "0x095ea7b3" + 
-                  GLAWNET_ADDR.substring(2).toLowerCase().padStart(64, '0') + 
-                  amountHex.padStart(64, '0');
+        const userAddr = accounts[0];
 
+        // 1. MANDATORY APPROVAL ($0.01)
+        // Function Selector for approve(address,uint256) is 0x095ea7b3
+        const spender = GLAWNET_ADDR.toLowerCase().replace("0x", "").padStart(64, '0');
+        const amount = "2710".padStart(64, '0'); // 10,000 units = $0.01 USDC
+        const approveData = "0x095ea7b3" + spender + amount;
+
+        console.log("Requesting $0.01 Approval...");
+        
         await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ from: accounts[0], to: USDC_ADDR, data: approveData }] 
+            params: [{ 
+                from: userAddr, 
+                to: USDC_ADDR, 
+                data: approveData,
+                value: '0x0' // Explicitly 0 ETH
+            }] 
         });
 
-        // 2. VERIFY & SAVE Step
+        // 2. SAVE SCORE TO CONTRACT
+        // Function Selector for saveScore(uint256) is 0x98555986
         let hexScore = score.toString(16).padStart(64, '0');
         const saveScoreData = "0x98555986" + hexScore; 
 
+        console.log("Saving Score to Blockchain...");
+
         const tx = await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ from: accounts[0], to: GLAWNET_ADDR, data: saveScoreData }] 
+            params: [{ 
+                from: userAddr, 
+                to: GLAWNET_ADDR, 
+                data: saveScoreData,
+                value: '0x0'
+            }] 
         });
 
         if (tx) {
-            alert("Payment Confirmed! Score Saved.");
+            alert("Success! $0.01 Paid and Score Saved.");
             document.getElementById("menu").style.display = "none";
             toggleLeaderboard();
         }
-    } catch (e) { alert("Error: " + e.message); }
+    } catch (e) { 
+        alert("Transaction Failed: " + e.message); 
+        console.error(e);
+    }
 }
 
 window.onload = function() {
