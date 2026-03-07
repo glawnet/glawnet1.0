@@ -23,8 +23,13 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 </div>
 
 <canvas id="g"></canvas>
-
+    
 <div id="menu">
+    <div id="startMenu" class="ui-box">
+    <h1 style="color: #4ade80;">GLAWNET</h1>
+    <p>Avoid the red blocks!</p>
+    <button onclick="startGame()">START GAME</button>
+</div>
 <h2 style="color: #FF3B30;">CRASHED!</h2>
     <div id="leaderboard" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 20px; border: 2px solid #4ade80; display: none; border-radius: 20px; width: 280px; z-index: 101;">
     <h2 style="color: #4ade80; margin-top: 0;">TOP SCORES</h2>
@@ -37,6 +42,24 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 </div>
 
 <script>
+let gameActive = false; // Start as FALSE
+let gameStarted = false; // Track if the loop is already running
+
+function startGame() {
+    // 1. Hide the start menu
+    document.getElementById("startMenu").style.display = "none";
+    
+    // 2. Activate the game
+    gameActive = true;
+    
+    // 3. Only trigger the loops if it's the first time
+    if (!gameStarted) {
+        gameStarted = true;
+        spawn();
+        draw();
+    }
+}
+    
 var c = document.getElementById("g");
 var x = c.getContext("2d");
 c.width = 400; c.height = 600;
