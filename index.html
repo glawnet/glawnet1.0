@@ -214,52 +214,50 @@ async function renderLeaderboard() {
 }
 
 async function payAndSave() {
-    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-    const GLAWNET_ADDR = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; 
-    
+    const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    const GLAWNET = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; 
     const provider = window.okxwallet || window.ethereum;
 
     try {
-        // 1. Force Network Switch to Base
+        // 1. Force Base Network
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const user = accounts[0];
+        const me = accounts[0];
 
-        // 2. APPROVE $0.01 (Wait for this to actually finish)
-        const approveData = "0x095ea7b3" + 
-                           GLAWNET_ADDR.substring(2).padStart(64, '0') + 
+        // 2. APPROVE $0.01 (10,000 units)
+        // This is the most common cause of "Third Party Error"
+        const approveHex = "0x095ea7b3" + 
+                           GLAWNET.substring(2).padStart(64, '0') + 
                            "0000000000000000000000000000000000000000000000000000000000002710";
 
-        console.log("Starting Step 1...");
-        const auth = await provider.request({ 
+        console.log("Sending Approval...");
+        const aTx = await provider.request({ 
             method: 'eth_sendTransaction', 
-            params: [{ from: user, to: USDC_ADDR, data: approveData }] 
+            params: [{ from: me, to: USDC, data: approveHex }] 
         });
 
-        if (auth) {
-            // we wait a few seconds for the block to confirm the approval
-            alert("Step 1 Done! Now for the final Save Score popup.");
+        // 3. SAVE SCORE
+        if (aTx) {
+            alert("Step 1 Success! Now click OK for the Final Save.");
             
-            // 3. THE SAVE SCORE CALL
-            // We ensure the score is converted to a proper 64-character hex string
-            let cleanScore = Math.floor(score); // Ensure it's an integer
-            let hexScore = cleanScore.toString(16).padStart(64, '0');
-            const saveScoreData = "0x98555986" + hexScore; 
+            // Convert score to 32-byte hex
+            let sHex = score.toString(16).padStart(64, '0');
+            const saveHex = "0x98555986" + sHex; 
 
             const tx = await provider.request({ 
                 method: 'eth_sendTransaction', 
-                params: [{ from: user, to: GLAWNET_ADDR, data: saveScoreData }] 
+                params: [{ from: me, to: GLAWNET, data: saveHex }] 
             });
 
             if (tx) {
-                alert("SUCCESS! Score saved.");
+                alert("DONE! Score Saved.");
                 document.getElementById("menu").style.display = "none";
+                if(window.renderLeaderboard) renderLeaderboard();
             }
         }
     } catch (e) { 
-        console.error("Full Error Object:", e);
-        // This will alert the SPECIFIC reason (e.g., "User rejected" or "Internal JSON-RPC error")
-        alert("Wallet Error: " + (e.data?.message || e.message)); 
+        console.error(e);
+        alert("Wallet Error: " + e.message); 
     }
 }
 window.onload = function() {
