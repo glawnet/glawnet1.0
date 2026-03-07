@@ -97,48 +97,47 @@ p.x = (e.touches[0].clientX - rect.left) * (400 / rect.width) - 20;
 
 async function payAndSave() {
     const btn = document.getElementById("payBtn");
-    const finalScore = document.getElementById("fs").innerText;
-    btn.innerText = "WAITING FOR WALLET...";
+    btn.innerText = "OPENING USDC PAY...";
 
     try {
         const provider = window.okxwallet || window.ethereum;
-        if (!provider) {
-            alert("No wallet detected!");
-            return;
-        }
-
-        // 1. Get the connected account
-        const accounts = await provider.request({ method: 'eth_accounts' });
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const fromAddress = accounts[0];
 
-        // 2. Prepare the transaction
-        // Value: 0.1 ETH (for test) or 0.0001 ETH. 
-        // Note: '0x38d7ea4c68000' is 0.001 ETH in hex format (Wei)
-        const transactionParameters = {
-            to: '0x764d0e278d33D391466092A10AABF616B7C3f533', // Your Address
-            from: fromAddress, 
-            value: '0x38d7ea4c68000', // Roughly $0.10 in Testnet ETH
-            chainId: '0x14a34', // '0x14a34' is the Hex for 84532 (Base Sepolia)
+        // 1. REAL MAINNET DETAILS
+        const usdcAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Official Native USDC on Base
+        const receiver = "0x764d0e278d33D391466092A10AABF616B7C3f533"; // Your wallet address
+        const amountHex = "0x186A0"; // This is exactly $0.10 (100,000 units)
+
+        // 2. THE COMMAND (ERC-20 transfer function)
+        // 0xa9059cbb is the hex code for 'transfer(address,uint256)'
+        const data = "0xa9059cbb" + 
+                     receiver.replace("0x", "").padStart(64, "0") + 
+                     amountHex.replace("0x", "").padStart(64, "0");
+
+        // 3. SEND TRANSACTION
+        const txParams = {
+            from: fromAddress,
+            to: usdcAddress, // Interaction is WITH the USDC contract
+            data: data,      // The data tells it to send $0.10 to your address
+            chainId: '0x2105' // Forces Base Mainnet (8453)
         };
 
-        // 3. Send the request
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
-            params: [transactionParameters],
+            params: [txParams],
         });
 
         if (txHash) {
-            alert("SUCCESS! Score " + finalScore + " recorded.\nTx: " + txHash.substring(0,10) + "...");
+            alert("SUCCESS! $0.10 USDC Sent. Score Recorded.");
             location.reload();
         }
-
     } catch (err) {
-        console.error(err);
-        alert("Payment Failed: " + (err.message || "User denied transaction"));
-        btn.innerText = "SAVE SCORE ($0.10)";
+        alert("Payment Error: " + err.message);
+        btn.innerText = "SAVE SCORE";
     }
 }
-
+    
 loop();
 // Try to connect automatically when game starts
 window.onload = connectWallet;
