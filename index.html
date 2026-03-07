@@ -96,20 +96,47 @@ p.x = (e.touches[0].clientX - rect.left) * (400 / rect.width) - 20;
 }, {passive: false});
 
 async function payAndSave() {
-const btn = document.getElementById("payBtn");
-btn.innerText = "Processing...";
-try {
-const base = window.createBaseAccountSDK({ appName: "GLAWNET", chainId: 84532 });
-await base.pay({
-to: "0x764d0e278d33D391466092A10AABF616B7C3f533",
-value: "100000",
-currency: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
-});
-alert("Score Saved!"); location.reload();
-} catch (err) {
-alert("Check your wallet for the payment prompt.");
-btn.innerText = "SAVE SCORE ($0.10)";
-}
+    const btn = document.getElementById("payBtn");
+    const finalScore = document.getElementById("fs").innerText;
+    btn.innerText = "WAITING FOR WALLET...";
+
+    try {
+        const provider = window.okxwallet || window.ethereum;
+        if (!provider) {
+            alert("No wallet detected!");
+            return;
+        }
+
+        // 1. Get the connected account
+        const accounts = await provider.request({ method: 'eth_accounts' });
+        const fromAddress = accounts[0];
+
+        // 2. Prepare the transaction
+        // Value: 0.1 ETH (for test) or 0.0001 ETH. 
+        // Note: '0x38d7ea4c68000' is 0.001 ETH in hex format (Wei)
+        const transactionParameters = {
+            to: '0x764d0e278d33D391466092A10AABF616B7C3f533', // Your Address
+            from: fromAddress, 
+            value: '0x38d7ea4c68000', // Roughly $0.10 in Testnet ETH
+            chainId: '0x14a34', // '0x14a34' is the Hex for 84532 (Base Sepolia)
+        };
+
+        // 3. Send the request
+        const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [transactionParameters],
+        });
+
+        if (txHash) {
+            alert("SUCCESS! Score " + finalScore + " recorded.\nTx: " + txHash.substring(0,10) + "...");
+            location.reload();
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Payment Failed: " + (err.message || "User denied transaction"));
+        btn.innerText = "SAVE SCORE ($0.10)";
+    }
 }
 
 loop();
