@@ -26,6 +26,11 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 
 <div id="menu">
 <h2 style="color: #FF3B30;">CRASHED!</h2>
+    <div id="leaderboard" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 20px; border: 2px solid #4ade80; display: none; border-radius: 20px; width: 280px; z-index: 101;">
+    <h2 style="color: #4ade80; margin-top: 0;">TOP SCORES</h2>
+    <div id="scoreList" style="text-align: left; margin-bottom: 20px;"></div>
+    <button onclick="location.reload()" style="background:#4ade80;">PLAY AGAIN</button>
+</div>
 <p>Final Score: <span id="fs">0</span></p>
 <button id="payBtn" onclick="payAndSave()">SAVE SCORE</button>
 <button onclick="location.reload()" style="background:none; text-decoration:underline; color:#666; margin-top:10px;">Try Again</button>
@@ -151,6 +156,34 @@ async function payAndSave() {
 loop();
 // Try to connect automatically when game starts
 window.onload = connectWallet;
+    
+    function updateLeaderboard(newScore) {
+    // 1. Get existing scores or start fresh
+    let scores = JSON.parse(localStorage.getItem('glawnet_scores')) || [];
+    
+    // 2. Add new score and sort (Highest first)
+    scores.push(newScore);
+    scores.sort((a, b) => b - a);
+    
+    // 3. Keep only top 5
+    scores = scores.slice(0, 5);
+    localStorage.setItem('glawnet_scores', JSON.stringify(scores));
+
+    // 4. Build the list for the UI
+    const listDiv = document.getElementById("scoreList");
+    listDiv.innerHTML = scores.map((s, i) => 
+        `<div style="display:flex; justify-content:space-between; padding: 5px 0; border-bottom: 1px solid #333;">
+            <span>#${i+1}</span> <strong>${s}</strong>
+         </div>`
+    ).join('');
+}
+
+// Update your existing game-over logic to show this
+function showLeaderboard() {
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("leaderboard").style.display = "block";
+    updateLeaderboard(score);
+}
 </script>
 
 </body>
