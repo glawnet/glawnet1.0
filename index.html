@@ -80,7 +80,7 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 <div id="menu" class="ui-box" style="display:none;">
     <h2 style="color: #FF3B30;">CRASHED!</h2>
     <p>Final Score: <span id="fs">0</span></p>
-    <button id="payBtn" onclick="payAndSave()">SAVE SCORE ($0.01)</button>
+    <button id="payBtn" onclick="payAndSave()">SAVE SCORE</button>
     <button onclick="resetGame()" style="background:none; text-decoration:underline; color:#666;">Try Again Free</button>
 </div>
 
@@ -89,7 +89,7 @@ var c = document.getElementById("g"), x = c.getContext("2d");
 c.width = 400; c.height = 600;
 var score = 0, active = false, speed = 10, p = { x: 180, y: 500, w: 40, h: 40 }, obs = [];
 
-const GLAWNET_ADDR = "0xB5368F7979d1586E5368e6d0eBf6FF2E7b391B4f"; 
+const GLAWNET_ADDR = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; 
 
 function drawPlayer() {
     x.clearRect(0, 0, 400, 600);
@@ -216,7 +216,7 @@ async function renderLeaderboard() {
 async function payAndSave() {
     // 1. Core Variables (Ensure these are correct for Base Mainnet)
     const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-    const GLAWNET_ADDR = "0xB5368F7979d1586E5368e6d0eBf6FF2E7b391B4f"; 
+    const GLAWNET_ADDR = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; 
     
     const provider = window.okxwallet || window.ethereum;
     if (!provider) { alert("Please install OKX Wallet"); return; }
