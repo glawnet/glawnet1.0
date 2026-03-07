@@ -220,47 +220,46 @@ async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
 
     try {
+        // 1. Force Network Switch to Base
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const user = accounts[0];
 
-        // STEP 1: APPROVE $0.01 USDC
-        // This is the hex for 10,000 units.
+        // 2. APPROVE $0.01 (Wait for this to actually finish)
         const approveData = "0x095ea7b3" + 
                            GLAWNET_ADDR.substring(2).padStart(64, '0') + 
                            "0000000000000000000000000000000000000000000000000000000000002710";
 
-        alert("Step 1: Confirm the $0.01 Spending Cap in your wallet.");
-        
-        const approveTx = await provider.request({ 
+        console.log("Starting Step 1...");
+        const auth = await provider.request({ 
             method: 'eth_sendTransaction', 
             params: [{ from: user, to: USDC_ADDR, data: approveData }] 
         });
 
-        if (approveTx) {
-            alert("Approval sent! Waiting 5 seconds for the network to sync...");
+        if (auth) {
+            // we wait a few seconds for the block to confirm the approval
+            alert("Step 1 Done! Now for the final Save Score popup.");
             
-            // Wait 5 seconds so the blockchain knows you approved the $0.01
-            await new Promise(resolve => setTimeout(resolve, 5000));
-
-            // STEP 2: SAVE SCORE
-            let hexScore = score.toString(16).padStart(64, '0');
+            // 3. THE SAVE SCORE CALL
+            // We ensure the score is converted to a proper 64-character hex string
+            let cleanScore = Math.floor(score); // Ensure it's an integer
+            let hexScore = cleanScore.toString(16).padStart(64, '0');
             const saveScoreData = "0x98555986" + hexScore; 
 
-            alert("Step 2: Now confirm the final Score Save.");
             const tx = await provider.request({ 
                 method: 'eth_sendTransaction', 
                 params: [{ from: user, to: GLAWNET_ADDR, data: saveScoreData }] 
             });
 
             if (tx) {
-                alert("SUCCESS! Score saved to the leaderboard.");
+                alert("SUCCESS! Score saved.");
                 document.getElementById("menu").style.display = "none";
             }
         }
     } catch (e) { 
-        console.error(e);
-        alert("ERROR: " + e.message + "\n\nTip: Make sure you have $0.01 USDC and some ETH for gas on Base!"); 
+        console.error("Full Error Object:", e);
+        // This will alert the SPECIFIC reason (e.g., "User rejected" or "Internal JSON-RPC error")
+        alert("Wallet Error: " + (e.data?.message || e.message)); 
     }
 }
 window.onload = function() {
