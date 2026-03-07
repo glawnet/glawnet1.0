@@ -6,14 +6,16 @@
 <style>
 body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
 canvas { background: #0a0a0a; display: block; margin: 0 auto; border-bottom: 5px solid #0052FF; touch-action: none; }
-#menu, #startMenu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; width: 280px; }
-button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 20px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; }
+.ui-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; width: 280px; }
+button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 15px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; }
 #connectBtn { position: absolute; top: 15px; right: 15px; padding: 10px 15px; background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; font-size: 12px; width: auto; z-index: 1000; }
-#leaderboard { background: #111; padding: 20px; border: 2px solid #4ade80; border-radius: 20px; margin-top: 15px; }
+#lbBtn { position: absolute; top: 15px; left: 15px; padding: 10px 15px; background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; color: #4ade80; font-size: 12px; width: auto; z-index: 1000; }
+#leaderboardTab { border-color: #4ade80; box-shadow: 0 0 30px #4ade80; }
 </style>
 </head>
 <body>
 
+<button id="lbBtn" onclick="toggleLeaderboard()">LEADERBOARD</button>
 <button id="connectBtn" onclick="connectWallet()">CONNECT WALLET</button>
 
 <div style="position: absolute; top: 20px; width: 100%;">
@@ -23,21 +25,21 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 
 <canvas id="g"></canvas>
 
-<div id="startMenu">
+<div id="startMenu" class="ui-box">
     <h2 style="color: #0052FF;">READY?</h2>
     <p>Avoid the red squares.</p>
     <button onclick="startGame()">START GAME</button>
 </div>
 
-<div id="menu" style="display:none;">
+<div id="leaderboardTab" class="ui-box" style="display: none;">
+    <h2 style="color: #4ade80; margin-top: 0;">TOP RUNNERS</h2>
+    <div id="scoreList" style="text-align: left; margin-bottom: 20px;"></div>
+    <button onclick="toggleLeaderboard()" style="background: #4ade80;">CLOSE</button>
+</div>
+
+<div id="menu" class="ui-box" style="display:none;">
     <h2 style="color: #FF3B30;">CRASHED!</h2>
     <p>Final Score: <span id="fs">0</span></p>
-    
-    <div id="leaderboard" style="display: none;">
-        <h2 style="color: #4ade80; margin-top: 0;">TOP SCORES</h2>
-        <div id="scoreList" style="text-align: left; margin-bottom: 20px;"></div>
-    </div>
-
     <button id="payBtn" onclick="payAndSave()">SAVE SCORE ($0.01)</button>
     <button onclick="resetGame()" style="background:none; text-decoration:underline; color:#666;">Try Again Free</button>
 </div>
@@ -47,72 +49,48 @@ var c = document.getElementById("g");
 var x = c.getContext("2d");
 c.width = 400; c.height = 600;
 
-var score = 0; 
-var active = false; // Changed to false to prevent auto-start
-var speed = 6;
-var p = { x: 180, y: 500, w: 40, h: 40 };
-var obs = [];
+var score = 0, active = false, speed = 6, p = { x: 180, y: 500, w: 40, h: 40 }, obs = [];
 
-// NEW: Start Game Trigger
 function startGame() {
     document.getElementById("startMenu").style.display = "none";
     active = true;
     loop();
 }
 
-// NEW: Reset Game (Allows playing again without refresh)
 function resetGame() {
-    score = 0;
-    speed = 6;
-    obs = [];
-    p.x = 180;
-    active = true;
+    score = 0; speed = 6; obs = []; p.x = 180; active = true;
     document.getElementById("s").innerText = "0";
     document.getElementById("menu").style.display = "none";
-    document.getElementById("leaderboard").style.display = "none";
     loop();
 }
 
 async function connectWallet() {
     const btn = document.getElementById("connectBtn");
-    btn.innerText = "LINKING...";
     try {
         const provider = window.okxwallet || window.ethereum;
-        if (!provider) { alert("Wallet not found!"); btn.innerText = "CONNECT WALLET"; return; }
+        if (!provider) return;
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const address = accounts[0];
-        if (address) {
-            btn.innerText = address.substring(0, 6) + "..." + address.substring(address.length - 4);
+        if (accounts[0]) {
+            btn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(accounts[0].length - 4);
             btn.style.background = "#000"; btn.style.borderColor = "#fff";
         }
-    } catch (err) { alert("Connection Error: " + err.message); btn.innerText = "CONNECT WALLET"; }
+    } catch (err) { console.log(err); }
 }
 
 function loop() {
     if (!active) return;
     x.clearRect(0, 0, 400, 600);
-    x.fillStyle = "#0052FF";
-    x.fillRect(p.x, p.y, p.w, p.h);
-
+    x.fillStyle = "#0052FF"; x.fillRect(p.x, p.y, p.w, p.h);
     if (Math.random() < 0.03) { obs.push({ x: Math.random() * 360, y: -40, w: 40, h: 40 }); }
-
     for (var i = obs.length - 1; i >= 0; i--) {
         var o = obs[i]; o.y += speed;
-        x.fillStyle = "#FF3B30";
-        x.fillRect(o.x, o.y, o.w, o.h);
-
+        x.fillStyle = "#FF3B30"; x.fillRect(o.x, o.y, o.w, o.h);
         if (p.x < o.x + o.w && p.x + p.w > o.x && p.y < o.y + o.h && p.y + p.h > o.y) {
             active = false; 
             document.getElementById("menu").style.display = "block";
             document.getElementById("fs").innerText = score;
         }
-
-        if (o.y > 600) { 
-            obs.splice(i, 1); 
-            score++; 
-            document.getElementById("s").innerText = score; 
-            speed += 0.05; 
-        }
+        if (o.y > 600) { obs.splice(i, 1); score++; document.getElementById("s").innerText = score; speed += 0.05; }
     }
     requestAnimationFrame(loop);
 }
@@ -124,59 +102,49 @@ window.addEventListener("touchmove", function(e) {
     e.preventDefault(); 
 }, {passive: false});
 
+function toggleLeaderboard() {
+    const tab = document.getElementById("leaderboardTab");
+    if (tab.style.display === "none") {
+        tab.style.display = "block";
+        renderLeaderboard();
+    } else {
+        tab.style.display = "none";
+    }
+}
+
+function renderLeaderboard() {
+    let data = JSON.parse(localStorage.getItem('glawnet_lb_v2')) || [];
+    const list = document.getElementById("scoreList");
+    if (data.length === 0) { list.innerHTML = "<p style='color:#666; text-align:center;'>No scores yet!</p>"; return; }
+    
+    list.innerHTML = data.map((entry, i) => `
+        <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid #333; font-size: 12px;">
+            <span>#${i+1} <span style="color:#4ade80; margin-left:5px;">${entry.addr}</span></span> 
+            <strong>${entry.val}</strong>
+        </div>`).join('');
+}
+
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
-    const MAINNET_CHAIN_ID = '0x2105'; 
-    const REAL_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-    const amountHex = "0x2710"; 
-
     try {
-        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: MAINNET_CHAIN_ID }] });
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const data = "0xa9059cbb" + "000000000000000000000000764d0e278d33D391466092A10AABF616B7C3f533" + amountHex.replace("0x", "").padStart(64, "0");
-
-        const txHash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{ from: accounts[0], to: REAL_USDC, data: data, chainId: MAINNET_CHAIN_ID }],
-        });
-
-        if (txHash) {
-            showLeaderboard();
+        const data = "0xa9059cbb" + "000000000000000000000000764d0e278d33D391466092A10AABF616B7C3f533" + "0000000000000000000000000000000000000000000000000000000000002710";
+        const tx = await provider.request({ method: 'eth_sendTransaction', params: [{ from: accounts[0], to: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", data: data, chainId: '0x2105' }] });
+        if (tx) {
+            saveToLB(accounts[0], score);
+            toggleLeaderboard();
+            document.getElementById("menu").style.display = "none";
         }
-    } catch (e) { alert("Payment Error: " + e.message); }
+    } catch (e) { alert(e.message); }
 }
 
-function updateLeaderboard(newScore) {
-    // 1. Get the connected address from the button text or a variable
-    const btn = document.getElementById("connectBtn");
-    const playerAddress = btn.innerText.includes("...") ? btn.innerText : "Anonymous";
-
-    // 2. Get existing data (which is now an array of objects)
-    let leaderboardData = JSON.parse(localStorage.getItem('glawnet_leaderboard')) || [];
-    
-    // 3. Add the new entry as an object
-    leaderboardData.push({ address: playerAddress, score: newScore });
-    
-    // 4. Sort by score (Highest first)
-    leaderboardData.sort((a, b) => b.score - a.score);
-    
-    // 5. Keep top 5
-    leaderboardData = leaderboardData.slice(0, 5);
-    localStorage.setItem('glawnet_leaderboard', JSON.stringify(leaderboardData));
-
-    // 6. Build the UI to show Address AND Score
-    const listDiv = document.getElementById("scoreList");
-    listDiv.innerHTML = leaderboardData.map((entry, i) => 
-        `<div style="display:flex; justify-content:space-between; padding: 5px 0; border-bottom: 1px solid #333; font-size: 14px;">
-            <span>#${i+1} <span style="color:#888; margin-left:5px;">${entry.address}</span></span> 
-            <strong>${entry.score}</strong>
-         </div>`
-    ).join('');
-}
-
-function showLeaderboard() {
-    document.getElementById("leaderboard").style.display = "block";
-    updateLeaderboard(score);
+function saveToLB(addr, val) {
+    let data = JSON.parse(localStorage.getItem('glawnet_lb_v2')) || [];
+    let shortAddr = addr.substring(0, 6) + "..." + addr.substring(addr.length - 4);
+    data.push({ addr: shortAddr, val: val });
+    data.sort((a, b) => b.val - a.val);
+    localStorage.setItem('glawnet_lb_v2', JSON.stringify(data.slice(0, 5)));
 }
 
 window.onload = connectWallet;
