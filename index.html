@@ -170,7 +170,8 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-// Logic for Cross-Device Score Sync via Alchemy
+// --- UPDATED SYNC LOGIC ---
+
 async function updateLifetimeUI() {
     const lsElement = document.getElementById("ls");
     const provider = window.okxwallet || window.ethereum;
@@ -187,11 +188,12 @@ async function updateLifetimeUI() {
                 method: "eth_getLogs", 
                 params: [{
                     address: USDC_ADDR,
-                    fromBlock: "0x0",
+                    fromBlock: "0x1100000", // Start from a recent block to speed up search
+                    toBlock: "latest",
                     topics: [
-                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-                        "0x" + userAddr.substring(2).padStart(64, "0"),
-                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0")
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // ERC20 Transfer Signature
+                        "0x" + userAddr.substring(2).padStart(64, "0"), // FROM: You
+                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") // TO: Dev Wallet
                     ]
                 }] 
             })
@@ -199,22 +201,24 @@ async function updateLifetimeUI() {
         const d = await res.json(); 
         
         let userLifetimeTotal = 0;
-        if (d.result) {
+        if (d && d.result && d.result.length > 0) {
             d.result.forEach(log => {
-                // Read the hidden score from the end of the transaction data
+                // The score is at the very end of the data string
                 const hiddenScoreHex = log.data.slice(-64);
-                userLifetimeTotal += parseInt(hiddenScoreHex, 16) || 0;
+                const points = parseInt(hiddenScoreHex, 16);
+                if (!isNaN(points)) userLifetimeTotal += points;
             });
+            lsElement.innerText = userLifetimeTotal;
+            localStorage.setItem("glawnet_total_score", userLifetimeTotal);
+        } else {
+            // If API is slow, use local storage as fallback
+            lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
         }
-        lsElement.innerText = userLifetimeTotal;
-        localStorage.setItem("glawnet_total_score", userLifetimeTotal);
 
     } catch (e) {
         console.error("Sync Error:", e);
-        lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
     }
 }
-
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
     try {
@@ -254,7 +258,7 @@ async function payAndSave() {
 // Global Leaderboard - Summing up all hidden scores for all users
 async function renderLeaderboard() {
     const list = document.getElementById("scoreList");
-    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing Global Lifetime...</p>";
+    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing Global...</p>";
     try {
         const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
             method: 'POST',
@@ -263,34 +267,40 @@ async function renderLeaderboard() {
                 method: "eth_getLogs", 
                 params: [{ 
                     address: USDC_ADDR, 
-                    fromBlock: "0x0", 
+                    fromBlock: "0x1100000", 
                     topics: [
                         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-                        null,
-                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0")
+                        null, // Any Sender
+                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") // Only TO your wallet
                     ] 
                 }] 
             })
         });
         const d = await res.json(); 
         let playerTotals = {};
-        if (d.result) {
+        
+        if (d.result && d.result.length > 0) {
             d.result.forEach(log => {
                 let addr = "0x" + log.topics[1].slice(26).toLowerCase();
                 let scoreFromHex = parseInt(log.data.slice(-64), 16) || 0;
                 playerTotals[addr] = (playerTotals[addr] || 0) + scoreFromHex;
             });
+
+            let sorted = Object.entries(playerTotals).sort((a,b) => b[1]-a[1]).slice(0,5);
+            let html = "";
+            sorted.forEach((p, i) => {
+                html += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;">
+                            <span>#${i+1} ${p[0].slice(0,6)}...${p[0].slice(-4)}</span>
+                            <strong style="color:#4ade80;">LIFETIME: ${p[1]}</strong>
+                         </div>`;
+            });
+            list.innerHTML = html;
+        } else {
+            list.innerHTML = "<p style='text-align:center;'>No records on-chain yet.</p>";
         }
-        let sorted = Object.entries(playerTotals).sort((a,b) => b[1]-a[1]).slice(0,5);
-        let html = "";
-        sorted.forEach((p, i) => {
-            html += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;">
-                        <span>#${i+1} ${p[0].slice(0,6)}...${p[0].slice(-4)}</span>
-                        <strong style="color:#4ade80;">LIFETIME: ${p[1]}</strong>
-                     </div>`;
-        });
-        list.innerHTML = html || "No records found.";
-    } catch (e) { list.innerHTML = "Sync Error."; }
+    } catch (e) { 
+        list.innerHTML = "<p style='text-align:center; color:red;'>Sync Error</p>"; 
+    }
 }
 
 // Controls
