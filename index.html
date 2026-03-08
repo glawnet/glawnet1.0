@@ -215,51 +215,47 @@ async function renderLeaderboard() {
 
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
-    const MY_WALLET = "0x51b941194e2943718B48cB12F5E6d3974Cb7A77D"; // Your address
-    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    
+    // YOUR SETTINGS
+    const GLAWNET_CONTRACT = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; // Your Remix Contract
+    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
+    const amountHex = "0000000000000000000000000000000000000000000000000000000000002710"; // $0.01
 
     try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
-        // 1. SIMPLE TRANSFER DATA (No custom contract logic)
-        // This is the standard 'transfer' hex + your address + 0.01 amount
-        const data = "0xa9059cbb" + 
-                     MY_WALLET.substring(2).padStart(64, "0") + 
-                     "0000000000000000000000000000000000000000000000000000000000002710";
+        const user = accounts[0];
 
-        console.log("Initiating Payment...");
-        
-        // 2. SEND THE TRANSACTION
+        // This data string tells USDC to move 0.01 to the Glawnet Contract
+        const data = "0xa9059cbb" + 
+                     GLAWNET_CONTRACT.substring(2).padStart(64, "0") + 
+                     amountHex;
+
+        console.log("Sending $0.01 to Glawnet Contract...");
+
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
             params: [{
-                from: accounts[0],
+                from: user,
                 to: USDC_ADDR,
                 data: data
             }],
         });
 
-        // 3. WAIT & SAVE
         if (txHash) {
-            console.log("Payment sent! Hash:", txHash);
-            alert("Payment successful! Saving your score now...");
+            // SUCCESS: The money is now in your contract
+            alert("Payment Sent to Contract! \nScore: " + score + " saved.");
             
-            // This is where you call your local score saving logic
-            saveScoreLocally(score, txHash); 
+            // Hide menu and proceed
+            document.getElementById("menu").style.display = "none";
+            
+            // You can now see the balance of your contract increase on BaseScan
+            console.log("Check the contract balance here: https://basescan.org/address/" + GLAWNET_CONTRACT);
         }
 
     } catch (e) {
-        alert("Payment Failed: " + e.message);
+        console.error(e);
+        alert("Payment Error: " + e.message);
     }
-}
-
-function saveScoreLocally(finalScore, transactionId) {
-    // This function runs ONLY after the money is sent
-    console.log(`Saving ${finalScore} to leaderboard. Verified by ${transactionId}`);
-    
-    // Logic to update your UI or Vercel database goes here
-    document.getElementById("menu").style.display = "none";
-    alert("Score " + finalScore + " has been locked in!");
 }
 window.onload = function() {
     connectWallet();
