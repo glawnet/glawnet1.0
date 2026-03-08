@@ -213,61 +213,60 @@ async function renderLeaderboard() {
     } catch (e) { list.innerHTML = "Sync Error."; }
 }
 
+    function updateLeaderboardUI() {
+    const total = localStorage.getItem("glawnet_total_score") || 0;
+    const boardElement = document.getElementById("leaderboard-display");
+    
+    if (boardElement) {
+        boardElement.innerHTML = `<h3>Your Lifetime Score: ${total}</h3>`;
+    }
+}
+
+// Call this when the page first loads
+window.onload = updateLeaderboardUI;
+
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
-    
-    // THE GO-LIVE SETTINGS
-    const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802"; // Your specified wallet
-    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
-    const amountHex = "2710"; // Exactly $0.01
+    const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802"; 
+    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    const amountHex = "2710"; 
 
     try {
-        // 1. Force Base Mainnet
-        await provider.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x2105' }],
-        });
-
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const player = accounts[0];
-
-        // 2. CREATE THE TRANSFER DATA
-        // 0xa9059cbb is the standard 'transfer' function ID
+        
+        // DATA FOR $0.01 TRANSFER
         const data = "0xa9059cbb" + 
                      DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
                      amountHex.padStart(64, "0");
 
-        console.log("Requesting $0.01 USDC for Developer at " + DEV_WALLET);
-
-        // 3. SEND THE TRANSACTION
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
-            params: [{
-                from: player,
-                to: USDC_ADDR,
-                data: data
-            }],
+            params: [{ from: accounts[0], to: USDC_ADDR, data: data }],
         });
 
-    if (txHash) {
-            alert("Payment Confirmed! \nScore of " + score + " has been locked in.");
+        if (txHash) {
+            // --- ACCUMULATION LOGIC ---
+            // 1. Get existing total from the browser (or 0 if new)
+            let existingTotal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
             
-            // 1. Hide the "Game Over / Pay" menu
+            // 2. Add the current game session score to the total
+            let newTotal = existingTotal + score;
+            
+            // 3. Save it back to the browser "Leaderboard"
+            localStorage.setItem("glawnet_total_score", newTotal);
+            
+            alert(`Payment Success! \nAdded ${score} points. \nYour New Lifetime Total: ${newTotal}`);
+            
+            // 4. Update the UI Leaderboard
+            updateLeaderboardUI();
+            
+            // 5. Reset for next round
+            score = 0;
             document.getElementById("menu").style.display = "none";
-            
-            // 2. IMPORTANT: Show the Start Button or Reset the Game
-            // If your start button has an ID like "startButton", use this:
             document.getElementById("startButton").style.display = "block";
-            
-            // 3. Reset the internal score for the next round
-            score = 0; 
-            
-            console.log("Verified Transaction Hash:", txHash);
-        } 
-
+        }
     } catch (e) {
-        console.error("Payment Error:", e);
-        alert("Transaction Failed: " + (e.message || "User Canceled"));
+        alert("Payment Error: " + e.message);
     }
 }
 window.onload = function() {
