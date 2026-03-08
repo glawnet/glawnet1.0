@@ -214,65 +214,42 @@ async function renderLeaderboard() {
 }
 
 async function payAndSave() {
+    const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+    const GLAWNET = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; 
     const provider = window.okxwallet || window.ethereum;
-    
-    // THE GO-LIVE SETTINGS
-    const MAINNET_CHAIN_ID = '0x2105'; // Base Mainnet
-    const REAL_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-    const GLAWNET_ADDR = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; // Your New Contract
-    const amountHex = "2710"; // Exactly $0.01 (10,000 units)
 
     try {
-        // 1. Ensure user is on Base Mainnet
-        await provider.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: MAINNET_CHAIN_ID }],
-        });
-
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const user = accounts[0];
 
-        // 2. STEP 1: APPROVE the Contract to take $0.01
-        // Function selector '0x095ea7b3' is for 'approve(address,uint256)'
+        // 1. DATA FOR APPROVAL ($0.01)
+        // Ensure GLAWNET address is padded to 64 characters
         const approveData = "0x095ea7b3" + 
-                           GLAWNET_ADDR.substring(2).padStart(64, '0') + 
-                           amountHex.padStart(64, '0');
+                           GLAWNET.substring(2).toLowerCase().padStart(64, '0') + 
+                           "0000000000000000000000000000000000000000000000000000000000002710";
 
-        console.log("Requesting Approval...");
-        const approveHash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{
-                from: user,
-                to: REAL_USDC,
-                data: approveData
-            }],
+        console.log("Requesting Approval for:", GLAWNET);
+        await provider.request({ 
+            method: 'eth_sendTransaction', 
+            params: [{ from: user, to: USDC, data: approveData }] 
         });
 
-        if (approveHash) {
-            alert("Approval Confirmed! Now saving score...");
+        // 2. DATA FOR SAVE SCORE
+        // Ensure the score is a whole number and padded to 64 characters
+        const cleanScore = Math.floor(score).toString(16).padStart(64, '0');
+        const saveData = "0x98555986" + cleanScore;
 
-            // 3. STEP 2: CALL CONTRACT TO SAVE SCORE
-            // Function selector '0x98555986' is for 'verifyAndSave(uint256)'
-            let hexScore = Math.floor(score).toString(16).padStart(64, '0');
-            const saveScoreData = "0x98555986" + hexScore; 
+        console.log("Saving Score:", score);
+        const tx = await provider.request({ 
+            method: 'eth_sendTransaction', 
+            params: [{ from: user, to: GLAWNET, data: saveData }] 
+        });
 
-            const txHash = await provider.request({
-                method: 'eth_sendTransaction',
-                params: [{
-                    from: user,
-                    to: GLAWNET_ADDR,
-                    data: saveScoreData
-                }],
-            });
+        if (tx) alert("Score Recorded on Base!");
 
-            if (txHash) {
-                alert("SUCCESS! Payment Received & Score Saved: " + txHash);
-                document.getElementById("menu").style.display = "none";
-            }
-        }
     } catch (e) {
-        console.error(e);
-        alert("Transaction Failed: " + e.message + "\n\nMake sure you set the Spending Cap to 0.01!");
+        console.error("Signing Error Detail:", e);
+        alert("Signing Failed: " + (e.message || "Unknown Error"));
     }
 }
 window.onload = function() {
