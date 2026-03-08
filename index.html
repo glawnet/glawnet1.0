@@ -176,61 +176,51 @@ async function updateLifetimeUI() {
     const lsElement = document.getElementById("ls");
     const provider = window.okxwallet || window.ethereum;
 
-    // 1. Get the connected wallet address
     const accounts = await provider.request({ method: 'eth_accounts' });
-    if (accounts.length === 0) {
-        lsElement.innerText = "Connect Wallet";
-        return;
-    }
+    if (accounts.length === 0) return;
+    
     const userAddr = accounts[0].toLowerCase();
-    lsElement.innerText = "Syncing..."; // Visual feedback that it's working
+    lsElement.innerText = "Syncing..."; 
 
     try {
-        // 2. Query Alchemy for USDC transfers FROM user TO Dev Wallet
         const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 jsonrpc: "2.0", id: 1, 
                 method: "eth_getLogs", 
                 params: [{
-                    address: USDC_ADDR, // 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+                    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
                     fromBlock: "0x0", 
-                    toBlock: "latest",
                     topics: [
-                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer Event
-                        "0x" + userAddr.substring(2).padStart(64, "0"), // FROM Player
-                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") // TO Developer
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+                        "0x" + userAddr.substring(2).padStart(64, "0"), // From: You
+                        "0x" + "F5F563794da1d8Bc2566502731C4C82c6a88F802".substring(2).toLowerCase().padStart(64, "0") // To: Dev
                     ]
                 }] 
             })
         });
 
         const d = await res.json(); 
-        let userLifetimeTotal = 0;
+        console.log("Blockchain Response:", d); // Look at your PC's F12 Console for this!
 
-        if (d && d.result && d.result.length > 0) {
+        let total = 0;
+        if (d.result && d.result.length > 0) {
             d.result.forEach(log => {
-                // Extract the last 64 characters of the data field (our hidden score)
+                // Grab the score hidden at the end of the data
                 const hiddenScoreHex = log.data.slice(-64);
                 const points = parseInt(hiddenScoreHex, 16);
-                
-                // Only add if it's a valid number
-                if (!isNaN(points)) {
-                    userLifetimeTotal += points;
-                }
+                if (!isNaN(points)) total += points;
             });
-            
-            // Update UI and local fallback
-            lsElement.innerText = userLifetimeTotal;
-            localStorage.setItem("glawnet_total_score", userLifetimeTotal);
+            lsElement.innerText = total;
+            localStorage.setItem("glawnet_total_score", total);
         } else {
-            // If no on-chain records found yet, show 0 or local cache
+            // If the blockchain says 0, we check local storage
             lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
         }
-
     } catch (e) {
-        console.error("Alchemy Sync Error:", e);
-        lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
+        console.error("Sync Error:", e);
+        lsElement.innerText = "Error";
     }
 }
 async function payAndSave() {
