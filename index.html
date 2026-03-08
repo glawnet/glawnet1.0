@@ -244,31 +244,26 @@ async function payAndSave() {
             params: [{ from: accounts[0], to: USDC_ADDR, data: data }],
         });
 
-        if (txHash) {
-            // --- ACCUMULATION LOGIC ---
-            // 1. Get existing total from the browser (or 0 if new)
-            let existingTotal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
+       if (txHash) {
+            // 1. GET THE ACCUMULATED TOTAL FROM STORAGE
+            let lifetimeTotal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
             
-            // 2. Add the current game session score to the total
-            let newTotal = existingTotal + score;
+            // 2. ADD THE SCORE FROM THE ROUND JUST COMPLETED
+            lifetimeTotal += score;
             
-            // 3. Save it back to the browser "Leaderboard"
-            localStorage.setItem("glawnet_total_score", newTotal);
+            // 3. SAVE THE NEW ACCUMULATED TOTAL
+            localStorage.setItem("glawnet_total_score", lifetimeTotal);
             
-            alert(`Payment Success! \nAdded ${score} points. \nYour New Lifetime Total: ${newTotal}`);
+            // 4. NOW RESET THE 'SESSION' SCORE TO 0 FOR THE NEW GAME
+            score = 0; 
             
-            // 4. Update the UI Leaderboard
-            updateLeaderboardUI();
-            
-            // 5. Reset for next round
-            score = 0;
+            // 5. UPDATE UI AND RESTART
+            updateLeaderboardUI(); // Shows the new big number on screen
             document.getElementById("menu").style.display = "none";
-            document.getElementById("startButton").style.display = "block";
+            startGame(); 
+
+            alert("Points Saved! Your lifetime total is now: " + lifetimeTotal);
         }
-    } catch (e) {
-        alert("Payment Error: " + e.message);
-    }
-} 
 window.onload = function() {
     connectWallet();
     drawPlayer(); 
