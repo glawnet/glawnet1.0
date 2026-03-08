@@ -60,7 +60,7 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 
 <div class="title-area">
     <h1 style="color:#0052FF; margin: 0; font-size: 28px;">GLAWNET</h1>
-    <p style="margin: 5px 0;">Score: <span id="s">0</span></p>
+    <p style="margin: 5px 0;">Current: <span id="s">0</span> | Lifetime: <span id="ls" style="color:#4ade80;">0</span></p>
 </div>
 
 <canvas id="g"></canvas>
@@ -68,7 +68,7 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 <div id="startMenu" class="ui-box">
     <h2 style="color: #0052FF;">READY?</h2>
     <p>Avoid the red squares.</p>
-    <button onclick="startGame()">START GAME</button>
+    <button id="startBtn" onclick="startGame()">START GAME</button>
 </div>
 
 <div id="leaderboardTab" class="ui-box" style="display: none;">
@@ -79,8 +79,8 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 
 <div id="menu" class="ui-box" style="display:none;">
     <h2 style="color: #FF3B30;">CRASHED!</h2>
-    <p>Final Score: <span id="fs">0</span></p>
-    <button id="payBtn" onclick="payAndSave()">SAVE SCORE</button>
+    <p>Round Score: <span id="fs">0</span></p>
+    <button id="payBtn" onclick="payAndSave()">SAVE TO LIFETIME</button>
     <button onclick="resetGame()" style="background:none; text-decoration:underline; color:#666;">Try Again Free</button>
 </div>
 
@@ -89,7 +89,11 @@ var c = document.getElementById("g"), x = c.getContext("2d");
 c.width = 400; c.height = 600;
 var score = 0, active = false, speed = 10, p = { x: 180, y: 500, w: 40, h: 40 }, obs = [];
 
+// Constants
 const GLAWNET_ADDR = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; 
+const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802";
+const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const amountHex = "2710"; // $0.01
 
 function drawPlayer() {
     x.clearRect(0, 0, 400, 600);
@@ -97,7 +101,13 @@ function drawPlayer() {
     x.fillRect(p.x, p.y, p.w, p.h);
 }
 
-function startGame() { document.getElementById("startMenu").style.display = "none"; active = true; loop(); }
+function startGame() { 
+    document.getElementById("startMenu").style.display = "none"; 
+    document.getElementById("menu").style.display = "none";
+    active = true; 
+    loop(); 
+}
+
 function resetGame() { 
     score = 0; speed = 10; obs = []; p.x = 180; active = true; 
     c.style.borderColor = "#0052FF";
@@ -111,7 +121,7 @@ async function connectWallet() {
     const discBtn = document.getElementById("disconnectBtn");
     try {
         const provider = window.okxwallet || window.ethereum;
-        if (!provider) { alert("Install OKX Wallet!"); return; }
+        if (!provider) { return; }
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         if (accounts[0]) {
             connBtn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
@@ -159,6 +169,56 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
+// Logic for local score accumulation
+function updateLifetimeUI() {
+    const total = localStorage.getItem("glawnet_total_score") || 0;
+    document.getElementById("ls").innerText = total;
+}
+
+async function payAndSave() {
+    const provider = window.okxwallet || window.ethereum;
+    try {
+        await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }],
+        });
+
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        
+        const data = "0xa9059cbb" + 
+                     DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
+                     amountHex.padStart(64, "0");
+
+        const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: accounts[0], to: USDC_ADDR, data: data }],
+        });
+
+        if (txHash) {
+            // Accumulate
+            let lifetimeTotal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
+            lifetimeTotal += score;
+            localStorage.setItem("glawnet_total_score", lifetimeTotal);
+            
+            // UI Update
+            updateLifetimeUI();
+            
+            // Reset and Restart
+            score = 0;
+            document.getElementById("s").innerText = "0";
+            document.getElementById("menu").style.display = "none";
+            
+            // Trigger New Game
+            resetGame();
+            
+            alert("Score Saved to Lifetime Leaderboard!");
+        }
+    } catch (e) {
+        alert("Payment Error: " + (e.message || "Canceled"));
+    }
+}
+
+// Controls
 window.addEventListener("touchmove", function(e) {
     var rect = c.getBoundingClientRect();
     p.x = Math.max(0, Math.min((e.touches[0].clientX - rect.left) * (400 / rect.width) - 20, 360));
@@ -180,18 +240,15 @@ function toggleLeaderboard() {
 
 async function renderLeaderboard() {
     const list = document.getElementById("scoreList");
-    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing High Scores...</p>";
+    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing...</p>";
+    // Keeping your existing Alchemy logic for Global view
     try {
         const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
             method: 'POST',
             body: JSON.stringify({ 
                 jsonrpc: "2.0", id: 1, 
                 method: "eth_getLogs", 
-                params: [{
-                    address: GLAWNET_ADDR,
-                    fromBlock: "0x0",
-                    topics: ["0x55099354924a4d29f8f2d665b6a711467554f738f7d98305f6e80b435252875d"] 
-                }] 
+                params: [{ address: GLAWNET_ADDR, fromBlock: "0x0", topics: ["0x55099354924a4d29f8f2d665b6a711467554f738f7d98305f6e80b435252875d"] }] 
             })
         });
         const d = await res.json(); 
@@ -213,82 +270,9 @@ async function renderLeaderboard() {
     } catch (e) { list.innerHTML = "Sync Error."; }
 }
 
-    function updateLeaderboardUI() {
-    const total = localStorage.getItem("glawnet_total_score") || 0;
-    const boardElement = document.getElementById("leaderboard-display");
-    
-    if (boardElement) {
-        boardElement.innerHTML = `<h3>Your Lifetime Score: ${total}</h3>`;
-    }
-}
-
-// Call this when the page first loads
-window.onload = updateLeaderboardUI;
-
-async function payAndSave() {
-    const provider = window.okxwallet || window.ethereum;
-    
-    // 1. CONFIGURATION
-    const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802"; // Your Wallet
-    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
-    const amountHex = "2710"; // Exactly $0.01
-
-    try {
-        // 2. CONNECT & SWITCH TO BASE
-        await provider.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x2105' }],
-        });
-
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const player = accounts[0];
-
-        // 3. CONSTRUCT USDC DATA
-        const data = "0xa9059cbb" + 
-                     DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
-                     amountHex.padStart(64, "0");
-
-        // 4. SEND TRANSACTION
-        const txHash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{ from: player, to: USDC_ADDR, data: data }],
-        });
-
-        if (txHash) {
-            // --- SUCCESS LOGIC ---
-            
-            // A. Accumulate the score in LocalStorage
-            let lifetimeTotal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
-            lifetimeTotal += score; // Add current game score to the bank
-            localStorage.setItem("glawnet_total_score", lifetimeTotal);
-
-            // B. Reset the session score for the next round
-            score = 0; 
-
-            // C. UI & State Reset
-            document.getElementById("menu").style.display = "none"; // Hide payment screen
-            
-            // D. RESTART THE GAME ENGINE
-            // Make sure these match your specific game's start variables
-            gameActive = true; 
-            if (typeof startGame === "function") {
-                startGame(); 
-            } else {
-                // If you use a button instead of auto-start:
-                document.getElementById("startButton").style.display = "block";
-            }
-
-            alert("✅ Payment Confirmed! \nLifetime Score: " + lifetimeTotal);
-            console.log("Transaction Hash:", txHash);
-        }
-
-    } catch (e) {
-        console.error("Payment Error:", e);
-        alert("Transaction Failed: " + (e.message || "User Canceled"));
-    }
-}
 window.onload = function() {
     connectWallet();
+    updateLifetimeUI();
     drawPlayer(); 
 };
 </script>
