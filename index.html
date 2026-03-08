@@ -216,45 +216,51 @@ async function renderLeaderboard() {
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
     
-    // YOUR SETTINGS
-    const GLAWNET_CONTRACT = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; // Your Remix Contract
+    // THE GO-LIVE SETTINGS
+    const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802"; // Your specified wallet
     const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
-    const amountHex = "0000000000000000000000000000000000000000000000000000000000002710"; // $0.01
+    const amountHex = "2710"; // Exactly $0.01
 
     try {
+        // 1. Force Base Mainnet
+        await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }],
+        });
+
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const user = accounts[0];
+        const player = accounts[0];
 
-        // This data string tells USDC to move 0.01 to the Glawnet Contract
+        // 2. CREATE THE TRANSFER DATA
+        // 0xa9059cbb is the standard 'transfer' function ID
         const data = "0xa9059cbb" + 
-                     GLAWNET_CONTRACT.substring(2).padStart(64, "0") + 
-                     amountHex;
+                     DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
+                     amountHex.padStart(64, "0");
 
-        console.log("Sending $0.01 to Glawnet Contract...");
+        console.log("Requesting $0.01 USDC for Developer at " + DEV_WALLET);
 
+        // 3. SEND THE TRANSACTION
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
             params: [{
-                from: user,
+                from: player,
                 to: USDC_ADDR,
                 data: data
             }],
         });
 
         if (txHash) {
-            // SUCCESS: The money is now in your contract
-            alert("Payment Sent to Contract! \nScore: " + score + " saved.");
+            alert("Payment Confirmed! \n$0.01 sent to your developer wallet.");
             
-            // Hide menu and proceed
+            // Hide the game menu
             document.getElementById("menu").style.display = "none";
             
-            // You can now see the balance of your contract increase on BaseScan
-            console.log("Check the contract balance here: https://basescan.org/address/" + GLAWNET_CONTRACT);
+            console.log("Verified Transaction Hash:", txHash);
         }
 
     } catch (e) {
-        console.error(e);
-        alert("Payment Error: " + e.message);
+        console.error("Payment Error:", e);
+        alert("Transaction Failed: " + (e.message || "User Canceled"));
     }
 }
 window.onload = function() {
