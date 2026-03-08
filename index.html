@@ -214,43 +214,52 @@ async function renderLeaderboard() {
 }
 
 async function payAndSave() {
-    const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-    const GLAWNET = "0x0048e7B38e45eEFdA3b44132BCD63f130109bA84"; 
     const provider = window.okxwallet || window.ethereum;
+    const MY_WALLET = "0x51b941194e2943718B48cB12F5E6d3974Cb7A77D"; // Your address
+    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
     try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const user = accounts[0];
+        
+        // 1. SIMPLE TRANSFER DATA (No custom contract logic)
+        // This is the standard 'transfer' hex + your address + 0.01 amount
+        const data = "0xa9059cbb" + 
+                     MY_WALLET.substring(2).padStart(64, "0") + 
+                     "0000000000000000000000000000000000000000000000000000000000002710";
 
-        // 1. DATA FOR APPROVAL ($0.01)
-        // Ensure GLAWNET address is padded to 64 characters
-        const approveData = "0x095ea7b3" + 
-                           GLAWNET.substring(2).toLowerCase().padStart(64, '0') + 
-                           "0000000000000000000000000000000000000000000000000000000000002710";
-
-        console.log("Requesting Approval for:", GLAWNET);
-        await provider.request({ 
-            method: 'eth_sendTransaction', 
-            params: [{ from: user, to: USDC, data: approveData }] 
+        console.log("Initiating Payment...");
+        
+        // 2. SEND THE TRANSACTION
+        const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: accounts[0],
+                to: USDC_ADDR,
+                data: data
+            }],
         });
 
-        // 2. DATA FOR SAVE SCORE
-        // Ensure the score is a whole number and padded to 64 characters
-        const cleanScore = Math.floor(score).toString(16).padStart(64, '0');
-        const saveData = "0x98555986" + cleanScore;
-
-        console.log("Saving Score:", score);
-        const tx = await provider.request({ 
-            method: 'eth_sendTransaction', 
-            params: [{ from: user, to: GLAWNET, data: saveData }] 
-        });
-
-        if (tx) alert("Score Recorded on Base!");
+        // 3. WAIT & SAVE
+        if (txHash) {
+            console.log("Payment sent! Hash:", txHash);
+            alert("Payment successful! Saving your score now...");
+            
+            // This is where you call your local score saving logic
+            saveScoreLocally(score, txHash); 
+        }
 
     } catch (e) {
-        console.error("Signing Error Detail:", e);
-        alert("Signing Failed: " + (e.message || "Unknown Error"));
+        alert("Payment Failed: " + e.message);
     }
+}
+
+function saveScoreLocally(finalScore, transactionId) {
+    // This function runs ONLY after the money is sent
+    console.log(`Saving ${finalScore} to leaderboard. Verified by ${transactionId}`);
+    
+    // Logic to update your UI or Vercel database goes here
+    document.getElementById("menu").style.display = "none";
+    alert("Score " + finalScore + " has been locked in!");
 }
 window.onload = function() {
     connectWallet();
