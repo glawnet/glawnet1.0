@@ -170,9 +170,57 @@ function loop() {
 }
 
 // Logic for local score accumulation
-function updateLifetimeUI() {
-    const total = localStorage.getItem("glawnet_total_score") || 0;
-    document.getElementById("ls").innerText = total;
+async function updateLifetimeUI() {
+    const lsElement = document.getElementById("ls");
+    const provider = window.okxwallet || window.ethereum;
+
+    // 1. Get the connected wallet address
+    const accounts = await provider.request({ method: 'eth_accounts' });
+    if (accounts.length === 0) {
+        lsElement.innerText = "Connect Wallet";
+        return;
+    }
+    const userAddr = accounts[0].toLowerCase();
+
+    // 2. Fetch all payment logs for this contract from the Blockchain
+    try {
+        const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
+            method: 'POST',
+            body: JSON.stringify({ 
+                jsonrpc: "2.0", id: 1, 
+                method: "eth_getLogs", 
+                params: [{
+                    address: GLAWNET_ADDR,
+                    fromBlock: "0x0",
+                    topics: ["0x55099354924a4d29f8f2d665b6a711467554f738f7d98305f6e80b435252875d"] 
+                }] 
+            })
+        });
+        const d = await res.json(); 
+        
+        let userLifetimeTotal = 0;
+
+        // 3. Filter logs to find ONLY this specific user's scores
+        if (d.result) {
+            d.result.forEach(log => {
+                let logPlayerAddr = "0x" + log.topics[1].slice(26).toLowerCase();
+                if (logPlayerAddr === userAddr) {
+                    userLifetimeTotal += parseInt(log.data, 16) || 0;
+                }
+            });
+        }
+
+        // 4. Update the UI - This will now match on BOTH phone and PC
+        lsElement.innerText = userLifetimeTotal;
+        
+        // Optional: Sync the localStorage just in case they play offline
+        localStorage.setItem("glawnet_total_score", userLifetimeTotal);
+
+    } catch (e) {
+        console.error("Sync Error:", e);
+        // Fallback to local storage if the network fails
+        lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
+    }
 }
 
 async function payAndSave() {
