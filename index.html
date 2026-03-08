@@ -227,43 +227,66 @@ window.onload = updateLeaderboardUI;
 
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
-    const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802"; 
-    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-    const amountHex = "2710"; 
+    
+    // 1. CONFIGURATION
+    const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802"; // Your Wallet
+    const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
+    const amountHex = "2710"; // Exactly $0.01
 
     try {
+        // 2. CONNECT & SWITCH TO BASE
+        await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }],
+        });
+
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
-        // DATA FOR $0.01 TRANSFER
+        const player = accounts[0];
+
+        // 3. CONSTRUCT USDC DATA
         const data = "0xa9059cbb" + 
                      DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
                      amountHex.padStart(64, "0");
 
+        // 4. SEND TRANSACTION
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
-            params: [{ from: accounts[0], to: USDC_ADDR, data: data }],
+            params: [{ from: player, to: USDC_ADDR, data: data }],
         });
 
-       if (txHash) {
-            // 1. GET THE ACCUMULATED TOTAL FROM STORAGE
+        if (txHash) {
+            // --- SUCCESS LOGIC ---
+            
+            // A. Accumulate the score in LocalStorage
             let lifetimeTotal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
-            
-            // 2. ADD THE SCORE FROM THE ROUND JUST COMPLETED
-            lifetimeTotal += score;
-            
-            // 3. SAVE THE NEW ACCUMULATED TOTAL
+            lifetimeTotal += score; // Add current game score to the bank
             localStorage.setItem("glawnet_total_score", lifetimeTotal);
-            
-            // 4. NOW RESET THE 'SESSION' SCORE TO 0 FOR THE NEW GAME
-            score = 0; 
-            
-            // 5. UPDATE UI AND RESTART
-            updateLeaderboardUI(); // Shows the new big number on screen
-            document.getElementById("menu").style.display = "none";
-            startGame(); 
 
-            alert("Points Saved! Your lifetime total is now: " + lifetimeTotal);
+            // B. Reset the session score for the next round
+            score = 0; 
+
+            // C. UI & State Reset
+            document.getElementById("menu").style.display = "none"; // Hide payment screen
+            
+            // D. RESTART THE GAME ENGINE
+            // Make sure these match your specific game's start variables
+            gameActive = true; 
+            if (typeof startGame === "function") {
+                startGame(); 
+            } else {
+                // If you use a button instead of auto-start:
+                document.getElementById("startButton").style.display = "block";
+            }
+
+            alert("✅ Payment Confirmed! \nLifetime Score: " + lifetimeTotal);
+            console.log("Transaction Hash:", txHash);
         }
+
+    } catch (e) {
+        console.error("Payment Error:", e);
+        alert("Transaction Failed: " + (e.message || "User Canceled"));
+    }
+}
 window.onload = function() {
     connectWallet();
     drawPlayer(); 
