@@ -249,11 +249,18 @@ async function payAndSave() {
             }],
         });
 
-        if (txHash) {
-            alert("Payment Confirmed! \n$0.01 sent to your developer wallet.");
+    if (txHash) {
+            alert("Payment Confirmed! \nScore of " + score + " has been locked in.");
             
-            // Hide the game menu
+            // 1. Hide the "Game Over / Pay" menu
             document.getElementById("menu").style.display = "none";
+            
+            // 2. IMPORTANT: Show the Start Button or Reset the Game
+            // If your start button has an ID like "startButton", use this:
+            document.getElementById("startButton").style.display = "block";
+            
+            // 3. Reset the internal score for the next round
+            score = 0; 
             
             console.log("Verified Transaction Hash:", txHash);
         }
