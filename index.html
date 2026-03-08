@@ -232,6 +232,7 @@ async function updateLifetimeUI() {
         console.error("Alchemy Sync Error:", e);
         lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
     }
+}
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
     try {
