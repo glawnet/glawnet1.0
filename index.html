@@ -325,6 +325,19 @@ async function renderLeaderboard() {
         list.innerHTML = "<p style='text-align:center; color:red;'>Sync Error</p>"; 
     }
 }
+
+    function toggleLeaderboard() {
+    console.log("Leaderboard button clicked!"); // This helps us debug
+    const tab = document.getElementById("leaderboardTab");
+    if (!tab) return;
+    
+    if (tab.style.display === "none" || tab.style.display === "") {
+        tab.style.display = "block";
+        renderLeaderboard();
+    } else {
+        tab.style.display = "none";
+    }
+}
 window.onload = function() {
     connectWallet();
     drawPlayer(); 
