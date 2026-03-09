@@ -175,9 +175,10 @@ function loop() {
 async function updateLifetimeUI() {
     const lsElement = document.getElementById("ls");
     const provider = window.okxwallet || window.ethereum;
+
     const accounts = await provider.request({ method: 'eth_accounts' });
-    
     if (accounts.length === 0) return;
+    
     const userAddr = accounts[0].toLowerCase();
     lsElement.innerText = "Syncing..."; 
 
@@ -189,54 +190,55 @@ async function updateLifetimeUI() {
                 jsonrpc: "2.0", id: 1, 
                 method: "eth_getLogs", 
                 params: [{
-                    address: USDC_ADDR,
+                    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
                     fromBlock: "0x0", 
                     topics: [
-                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", 
-                        "0x" + userAddr.substring(2).padStart(64, "0"), 
-                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0")
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+                        "0x" + userAddr.substring(2).padStart(64, "0"), // From: You
+                        "0x" + "F5F563794da1d8Bc2566502731C4C82c6a88F802".substring(2).toLowerCase().padStart(64, "0") // To: Dev
                     ]
                 }] 
             })
         });
 
         const d = await res.json(); 
-        let totalOnChain = 0;
+        console.log("Blockchain Response:", d); // Look at your PC's F12 Console for this!
 
+        let total = 0;
         if (d.result && d.result.length > 0) {
             d.result.forEach(log => {
-                // If data has our 3rd chunk (the hidden score), use it
-                if (log.data.length > 130) { 
-                    const hiddenScoreHex = log.data.slice(-64);
-                    totalOnChain += parseInt(hiddenScoreHex, 16) || 0;
-                } else {
-                    // Fallback: If it's a valid payment to you but no score attached
-                    totalOnChain += 50; 
-                }
+                // Grab the score hidden at the end of the data
+                const hiddenScoreHex = log.data.slice(-64);
+                const points = parseInt(hiddenScoreHex, 16);
+                if (!isNaN(points)) total += points;
             });
-            lsElement.innerText = totalOnChain;
-            localStorage.setItem("glawnet_score_" + userAddr, totalOnChain);
+            lsElement.innerText = total;
+            localStorage.setItem("glawnet_total_score", total);
         } else {
-            lsElement.innerText = "0";
+            // If the blockchain says 0, we check local storage
+            lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
         }
     } catch (e) {
-        lsElement.innerText = localStorage.getItem("glawnet_score_" + userAddr) || "0";
+        console.error("Sync Error:", e);
+        lsElement.innerText = "Error";
     }
 }
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
     try {
+        await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }],
+        });
+
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         
-        // Ensure we are on Base Mainnet
-        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
-
+        // HIDE THE SCORE IN DATA
         const scoreHex = score.toString(16).padStart(64, "0");
-        // USDC Transfer Method ID + Dev Wallet + Amount (0.01 USDC) + Your Score
         const data = "0xa9059cbb" + 
                      DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
-                     "0000000000000000000000000000000000000000000000000000000000002710" + 
-                     scoreHex;
+                     amountHex.padStart(64, "0") + 
+                     scoreHex; // Append score to the USDC transfer
 
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
@@ -244,61 +246,50 @@ async function payAndSave() {
         });
 
         if (txHash) {
-            alert("Score Recorded! Syncing with Blockchain...");
+            // Instant local update while waiting for blockchain sync
+            let currentLocal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
+            localStorage.setItem("glawnet_total_score", currentLocal + score);
+            
+            alert("Score saved to Blockchain! Syncing...");
             resetGame();
-            // Wait 10 seconds for the block to be indexed, then refresh UI
-            setTimeout(updateLifetimeUI, 10000); 
+            setTimeout(updateLifetimeUI, 5000); // Give Alchemy a few seconds to index
         }
-    } catch (e) { alert("Payment Failed: " + e.message); }
+    } catch (e) {
+        alert("Payment Error: " + (e.message || "Canceled"));
+    }
 }
 
 // Global Leaderboard - Summing up all hidden scores for all users
 async function renderLeaderboard() {
     const list = document.getElementById("scoreList");
-    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing Global Data...</p>";
-    
+    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing Global...</p>";
     try {
         const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 jsonrpc: "2.0", id: 1, 
                 method: "eth_getLogs", 
                 params: [{ 
-                    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC Contract
-                    fromBlock: "0x0", 
-                    toBlock: "latest",
+                    address: USDC_ADDR, 
+                    fromBlock: "0x1100000", 
                     topics: [
-                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer Event
-                        null, // From: Anyone
-                        "0x" + "F5F563794da1d8Bc2566502731C4C82c6a88F802".substring(2).toLowerCase().padStart(64, "0") // To: YOU
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                        null, // Any Sender
+                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") // Only TO your wallet
                     ] 
                 }] 
             })
         });
-
         const d = await res.json(); 
-        console.log("Leaderboard Data:", d); // Check F12 for this!
-
         let playerTotals = {};
         
         if (d.result && d.result.length > 0) {
             d.result.forEach(log => {
-                // Get the player address from Topic 1
                 let addr = "0x" + log.topics[1].slice(26).toLowerCase();
-                let scoreVal = 0;
-                
-                // Read score from data padding (New) or fallback (Old)
-                if (log.data.length > 100) {
-                    scoreVal = parseInt(log.data.slice(-64), 16) || 0;
-                } else {
-                    scoreVal = 50; 
-                }
-                
-                playerTotals[addr] = (playerTotals[addr] || 0) + scoreVal;
+                let scoreFromHex = parseInt(log.data.slice(-64), 16) || 0;
+                playerTotals[addr] = (playerTotals[addr] || 0) + scoreFromHex;
             });
 
-            // Sort by score
             let sorted = Object.entries(playerTotals).sort((a,b) => b[1]-a[1]).slice(0,5);
             let html = "";
             sorted.forEach((p, i) => {
@@ -309,44 +300,33 @@ async function renderLeaderboard() {
             });
             list.innerHTML = html;
         } else {
-            list.innerHTML = "<p style='text-align:center;'>No records found on Base yet.</p>";
+            list.innerHTML = "<p style='text-align:center;'>No records on-chain yet.</p>";
         }
     } catch (e) { 
-        console.error("Leaderboard Sync Error:", e);
         list.innerHTML = "<p style='text-align:center; color:red;'>Sync Error</p>"; 
     }
 }
-    function toggleLeaderboard() {
-    console.log("Leaderboard button clicked!"); // This helps us debug
-    const tab = document.getElementById("leaderboardTab");
-    if (!tab) return;
-    
-    if (tab.style.display === "none" || tab.style.display === "") {
-        tab.style.display = "block";
-        renderLeaderboard();
-    } else {
-        tab.style.display = "none";
-    }
-}
 
-    // Controls - UPDATED
+// Controls
 window.addEventListener("touchmove", function(e) {
-    if (!active) drawPlayer(); // Keep player visible when game is off
     var rect = c.getBoundingClientRect();
-    // Calculate position based on touch
-    var touchX = (e.touches[0].clientX - rect.left) * (400 / rect.width);
-    p.x = Math.max(0, Math.min(touchX - 20, 360));
-    
+    p.x = Math.max(0, Math.min((e.touches[0].clientX - rect.left) * (400 / rect.width) - 20, 360));
+    if (!active) drawPlayer();
     e.preventDefault(); 
 }, {passive: false});
 
 window.addEventListener("mousemove", function(e) {
     var rect = c.getBoundingClientRect();
-    var mouseX = (e.clientX - rect.left) * (400 / rect.width);
-    p.x = Math.max(0, Math.min(mouseX - 20, 360));
+    p.x = Math.max(0, Math.min((e.clientX - rect.left) * (400 / rect.width) - 20, 360));
     if (!active) drawPlayer();
 });
-    
+
+function toggleLeaderboard() {
+    const tab = document.getElementById("leaderboardTab");
+    tab.style.display = (tab.style.display === "none") ? "block" : "none";
+    if (tab.style.display === "block") renderLeaderboard();
+}
+
 window.onload = function() {
     connectWallet();
     drawPlayer(); 
