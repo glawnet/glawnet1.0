@@ -337,6 +337,25 @@ async function renderLeaderboard() {
         tab.style.display = "none";
     }
 }
+
+    // Controls - UPDATED
+window.addEventListener("touchmove", function(e) {
+    if (!active) drawPlayer(); // Keep player visible when game is off
+    var rect = c.getBoundingClientRect();
+    // Calculate position based on touch
+    var touchX = (e.touches[0].clientX - rect.left) * (400 / rect.width);
+    p.x = Math.max(0, Math.min(touchX - 20, 360));
+    
+    e.preventDefault(); 
+}, {passive: false});
+
+window.addEventListener("mousemove", function(e) {
+    var rect = c.getBoundingClientRect();
+    var mouseX = (e.clientX - rect.left) * (400 / rect.width);
+    p.x = Math.max(0, Math.min(mouseX - 20, 360));
+    if (!active) drawPlayer();
+});
+    
 window.onload = function() {
     connectWallet();
     drawPlayer(); 
