@@ -81,6 +81,36 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 
 <div id="sideOverlay" onclick="toggleSidebar()" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2500;"></div>
 
+<div id="docsTab" class="ui-box" style="display: none;">
+    <h2 style="color: #0052FF;">DOCS</h2>
+    <div style="text-align: left; font-size: 13px; color: #ccc; line-height: 1.6;">
+        <p><b>Gameplay:</b> Dodge red squares. Speed increases every 10 points.</p>
+        <p><b>On-Chain Saving:</b> Click 'Save to Lifetime' after a crash. This costs 0.01 USDC on Base.</p>
+        <p><b>Transparency:</b> All scores are pulled directly from Alchemy blockchain logs.</p>
+    </div>
+    <button onclick="closeAllTabs()">CLOSE</button>
+</div>
+
+<div id="faqTab" class="ui-box" style="display: none;">
+    <h2 style="color: #0052FF;">FAQ</h2>
+    <div style="text-align: left; font-size: 13px; color: #ccc;">
+        <p><b>Q: Transaction delay?</b><br>A: Allow 5-10s for Base to process your save.</p>
+        <p><b>Q: Wrong Score?</b><br>A: Your Lifetime score is a sum of all successfully paid saves.</p>
+        <p><b>Q: Network?</b><br>A: This game runs exclusively on <b>Base Mainnet</b>.</p>
+    </div>
+    <button onclick="closeAllTabs()">CLOSE</button>
+</div>
+
+<div id="supportTab" class="ui-box" style="display: none;">
+    <h2 style="color: #FF3B30;">SUPPORT</h2>
+    <p style="font-size: 14px;">Need help or found a bug?</p>
+    <button onclick="window.location.href='mailto:your-email@gmail.com?subject=GLAWNET Support'" 
+            style="background:#222; border: 1px solid #FF3B30; color: #FF3B30;">
+        EMAIL SUPPORT
+    </button>
+    <button onclick="closeAllTabs()" style="background:none; margin-top:5px; color:#666;">Close</button>
+</div>
+    
 <div class="header">
     <div id="walletActions">
         <button id="connectBtn" onclick="connectWallet()">CONNECT WALLET</button>
@@ -123,6 +153,37 @@ var score = 0, active = false, speed = 10, p = { x: 180, y: 500, w: 40, h: 40 },
 const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802";
 const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const amountHex = "2710"; // $0.01
+
+    // Function to open a specific tab and close everything else
+function openTab(tabId) {
+    closeAllTabs(); // Hide all open UI boxes
+    
+    // If the sidebar is open, close it
+    const sidebar = document.getElementById("sidebar");
+    if (sidebar && sidebar.style.left === "0px") {
+        toggleSidebar(); 
+    }
+
+    // Show the requested tab
+    document.getElementById(tabId).style.display = "block";
+    
+    // Special case: if opening leaderboard, refresh the data
+    if (tabId === 'leaderboardTab') renderLeaderboard();
+}
+
+// Function to hide every possible popup box
+function closeAllTabs() {
+    const tabs = ['docsTab', 'faqTab', 'supportTab', 'leaderboardTab', 'menu', 'startMenu'];
+    tabs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+    });
+    
+    // After closing a tab, if the game isn't active, show the start menu back
+    if (!active) {
+        document.getElementById("startMenu").style.display = "block";
+    }
+}
 
 function drawPlayer() {
     x.clearRect(0, 0, 400, 600);
