@@ -72,10 +72,10 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 <div id="sidebar" style="position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background: #000; z-index: 3000; transition: 0.3s; padding: 60px 20px; text-align: left; border-right: 1px solid #333;">
     <div onclick="toggleSidebar()" style="position: absolute; top: 15px; right: 20px; font-size: 20px; cursor: pointer; color: #666;">✕</div>
     
-    <div class="menu-item" onclick="window.open('#docs')">📄 Docs</div>
-    <div class="menu-item" onclick="window.open('#support')">⊗ Support</div>
-    <div class="menu-item" onclick="window.open('#faq')">ⓘ FAQ</div>
-    <div class="menu-item" onclick="openLeaderboardFromMenu()">🏆 Leaderboard</div>
+    <div class="menu-item" onclick="openTab('docsTab')">📄 Docs</div>
+    <div class="menu-item" onclick="openTab('supportTab')">⊗ Support</div>
+    <div class="menu-item" onclick="openTab('faqTab')">ⓘ FAQ</div>
+    <div class="menu-item" onclick="openTab('leaderboardTab')">🏆 Leaderboard</div>
     <div class="menu-item" onclick="window.open('https://twitter.com/glawnet')">𝕏 Twitter</div>
 </div>
 
