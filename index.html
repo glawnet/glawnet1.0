@@ -166,7 +166,9 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
     <h2 style="color: #FF3B30;">CRASHED!</h2>
     <p>Round Score: <span id="fs">0</span></p>
     <button id="payBtn" onclick="payAndSave()">SAVE TO LIFETIME</button>
-    <button onclick="resetGame()" style="background:none; text-decoration:underline; color:#666;">Try Again Free</button>
+    <button onclick="goToStart()" style="background:none; text-decoration:underline; color:#666; margin-top:10px;">
+        Back to Start Menu
+    </button>
 </div>
 
 <script>
@@ -295,12 +297,26 @@ function startGame() {
     loop(); 
 }
 
+// New function to return to the very beginning
+function goToStart() {
+    active = false; // Stop any game logic
+    score = 0;
+    speed = 10;
+    obs = [];
+    p.x = 180;
+    
+    // UI Updates
+    document.getElementById("s").innerText = "0";
+    document.getElementById("menu").style.display = "none"; // Hide Crash screen
+    document.getElementById("startMenu").style.display = "block"; // Show Start screen
+    
+    drawPlayer(); // Draw the player in starting position
+}
+
+// Update your resetGame (used after a successful payment/save)
 function resetGame() { 
-    score = 0; speed = 10; obs = []; p.x = 180; active = true; 
-    c.style.borderColor = "#0052FF";
-    document.getElementById("s").innerText = "0"; 
-    document.getElementById("menu").style.display = "none"; 
-    loop(); 
+    // Instead of looping immediately, we go back to the start menu
+    goToStart();
 }
 
 async function connectWallet() {
