@@ -2,9 +2,39 @@
 <html>
 <head>
     <meta name="base:app_id" content="69aed2632976dc607e3a6704" />
+
+    <div id="menuIcon" onclick="toggleSidebar()" style="position: fixed; top: 15px; left: 15px; z-index: 2000; cursor: pointer; font-size: 24px;">☰</div>
+
+<div id="sidebar" style="position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background: #000; z-index: 3000; transition: 0.3s; padding: 60px 20px; text-align: left; border-right: 1px solid #333;">
+    <div onclick="toggleSidebar()" style="position: absolute; top: 15px; right: 20px; font-size: 20px; cursor: pointer; color: #666;">✕</div>
+    
+    <div class="menu-item" onclick="window.open('#docs')">📄 Docs</div>
+    <div class="menu-item" onclick="window.open('#support')">⊗ Support</div>
+    <div class="menu-item" onclick="window.open('#faq')">ⓘ FAQ</div>
+    <div class="menu-item" onclick="openLeaderboardFromMenu()">🏆 Leaderboard</div>
+    <div class="menu-item" onclick="window.open('https://twitter.com/yourhandle')">𝕏 Twitter</div>
+</div>
+
+<div id="sideOverlay" onclick="toggleSidebar()" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2500;"></div>
 <title>GLAWNET</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
+    .menu-item {
+    padding: 15px 0;
+    font-size: 16px;
+    color: #ccc;
+    cursor: pointer;
+    border-bottom: 1px solid #111;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.menu-item:hover { color: #0052FF; }
+
+/* Adjust header to make room for hamburger if needed */
+.header { padding-left: 50px !important; }
+    
 body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
 canvas { 
     background: #0a0a0a; 
@@ -337,6 +367,29 @@ window.addEventListener("mousemove", function(e) {
     var rect = c.getBoundingClientRect();
     p.x = Math.max(0, Math.min((e.clientX - rect.left) * (400 / rect.width) - 20, 360));
     if (!active) drawPlayer();
+});
+
+    function toggleSidebar() {
+    const side = document.getElementById("sidebar");
+    const over = document.getElementById("sideOverlay");
+    
+    if (side.style.left === "0px") {
+        side.style.left = "-280px";
+        over.style.display = "none";
+    } else {
+        side.style.left = "0px";
+        over.style.display = "block";
+    }
+}
+
+function openLeaderboardFromMenu() {
+    toggleSidebar(); // Close menu first
+    toggleLeaderboard(); // Your existing leaderboard function
+}
+
+// Ensure the sidebar closes if user clicks back or elsewhere
+window.addEventListener('keydown', (e) => {
+    if (e.key === "Escape") toggleSidebar();
 });
 
 function toggleLeaderboard() {
