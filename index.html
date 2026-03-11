@@ -1,88 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta name="base:app_id" content="69aed2632976dc607e3a6704" />
-<title>GLAWNET</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<style>
-body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
-canvas { 
-    background: #0a0a0a; 
-    display: block; 
-    margin: 0 auto; 
-    border-bottom: 5px solid #0052FF; 
-    touch-action: none;
-    max-height: 70vh; 
-    width: auto;
-    transition: border-color 0.3s ease;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>GLAWNET</title>
+    
+    <style>
+        body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
+        
+        /* Login Screen Gatekeeper */
+        #loginScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    background: #000;
-    z-index: 1001;
-}
+        canvas { 
+            background: #0a0a0a; display: block; margin: 0 auto; 
+            border-bottom: 5px solid #0052FF; touch-action: none;
+            max-height: 70vh; width: auto; transition: border-color 0.3s ease;
+        }
 
-#walletActions { display: flex; gap: 5px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #000; z-index: 1001; }
+        #walletActions { display: flex; gap: 5px; }
 
-#lbBtn, #connectBtn, #disconnectBtn { 
-    position: static; 
-    padding: 10px 12px;
-    font-size: 11px;
-    width: auto;
-    margin: 0;
-}
+        .ui-box { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: #111; padding: 30px; border: 2px solid #0052FF; 
+            border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; width: 280px; 
+        }
 
-.title-area {
-    padding: 10px 0;
-    background: black;
-}
+        button { 
+            cursor: pointer; border: none; transition: 0.2s; background: #0052FF; 
+            color: white; padding: 15px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; 
+        }
 
-.ui-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; width: 280px; }
-button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 15px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; }
-#lbBtn { background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; color: #4ade80; }
-#connectBtn { background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; }
-#disconnectBtn { background: rgba(255, 59, 48, 0.1); border: 1px solid #FF3B30; color: #FF3B30; display: none; }
-#leaderboardTab { border-color: #4ade80; box-shadow: 0 0 30px #4ade80; }
-</style>
+        #lbBtn { background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; color: #4ade80; width: auto; padding: 10px 12px; font-size: 11px; }
+        #connectBtn { background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; width: auto; padding: 10px 12px; font-size: 11px; }
+        #disconnectBtn { background: rgba(255, 59, 48, 0.1); border: 1px solid #FF3B30; color: #FF3B30; display: none; width: auto; padding: 10px 12px; font-size: 11px; }
+    </style>
 </head>
 <body>
 
-<div class="header">
-    <button id="lbBtn" onclick="toggleLeaderboard()">LEADERBOARD</button>
-    <div id="walletActions">
-        <button id="connectBtn" onclick="connectWallet()">CONNECT WALLET</button>
-        <button id="disconnectBtn" onclick="disconnectWallet()">DISCONNECT</button>
+<div id="loginScreen">
+    <h1 style="color:#0052FF; font-size: 40px; margin-bottom: 10px;">GLAWNET</h1>
+    <p style="color: #666; margin-bottom: 30px;">Base Network Mini-App</p>
+    <button onclick="connectWallet()" style="width: 80%; max-width: 300px;">CONNECT WALLET TO PLAY</button>
+</div>
+
+<div id="gameContainer" style="display:none;">
+    <div class="header">
+        <button id="lbBtn" onclick="toggleLeaderboard()">LEADERBOARD</button>
+        <div id="walletActions">
+            <button id="connectBtn" onclick="connectWallet()">CONNECT</button>
+            <button id="disconnectBtn" onclick="disconnectWallet()">DISCONNECT</button>
+        </div>
     </div>
-</div>
 
-<div class="title-area">
-    <h1 style="color:#0052FF; margin: 0; font-size: 28px;">GLAWNET</h1>
-    <p style="margin: 5px 0;">Current: <span id="s">0</span> | Lifetime: <span id="ls" style="color:#4ade80;">0</span></p>
-</div>
+    <div style="padding: 10px 0;">
+        <h1 style="color:#0052FF; margin: 0; font-size: 28px;">GLAWNET</h1>
+        <p style="margin: 5px 0;">Current: <span id="s">0</span> | Lifetime: <span id="ls" style="color:#4ade80;">0</span></p>
+    </div>
 
-<canvas id="g"></canvas>
+    <canvas id="g"></canvas>
 
-<div id="startMenu" class="ui-box">
-    <h2 style="color: #0052FF;">READY?</h2>
-    <p>Avoid the red squares.</p>
-    <button id="startBtn" onclick="startGame()">START GAME</button>
-</div>
+    <div id="startMenu" class="ui-box">
+        <h2 style="color: #0052FF;">READY?</h2>
+        <p>Avoid the red squares.</p>
+        <button onclick="startGame()">START GAME</button>
+    </div>
 
-<div id="leaderboardTab" class="ui-box" style="display: none;">
-    <h2 style="color: #4ade80; margin-top: 0;">GLOBAL RUNNERS</h2>
-    <div id="scoreList" style="text-align: left; margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
-    <button onclick="toggleLeaderboard()" style="background: #4ade80;">CLOSE</button>
-</div>
+    <div id="leaderboardTab" class="ui-box" style="display: none;">
+        <h2 style="color: #4ade80; margin-top: 0;">GLOBAL RUNNERS</h2>
+        <div id="scoreList" style="text-align: left; margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
+        <button onclick="toggleLeaderboard()" style="background: #4ade80;">CLOSE</button>
+    </div>
 
-<div id="menu" class="ui-box" style="display:none;">
-    <h2 style="color: #FF3B30;">CRASHED!</h2>
-    <p>Round Score: <span id="fs">0</span></p>
-    <button id="payBtn" onclick="payAndSave()">SAVE TO LIFETIME</button>
-    <button onclick="resetGame()" style="background:none; text-decoration:underline; color:#666;">Try Again Free</button>
+    <div id="menu" class="ui-box" style="display:none;">
+        <h2 style="color: #FF3B30;">CRASHED!</h2>
+        <p>Round Score: <span id="fs">0</span></p>
+        <button onclick="payAndSave()">SAVE TO LIFETIME</button>
+        <button onclick="resetGame()" style="background:none; text-decoration:underline; color:#666;">Try Again Free</button>
+    </div>
 </div>
 
 <script>
@@ -90,10 +90,8 @@ var c = document.getElementById("g"), x = c.getContext("2d");
 c.width = 400; c.height = 600;
 var score = 0, active = false, speed = 10, p = { x: 180, y: 500, w: 40, h: 40 }, obs = [];
 
-// Constants
 const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802";
 const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const amountHex = "2710"; // $0.01
 
 function drawPlayer() {
     x.clearRect(0, 0, 400, 600);
@@ -101,47 +99,43 @@ function drawPlayer() {
     x.fillRect(p.x, p.y, p.w, p.h);
 }
 
-function startGame() { 
-    document.getElementById("startMenu").style.display = "none"; 
-    document.getElementById("menu").style.display = "none";
-    active = true; 
-    loop(); 
-}
-
-function resetGame() { 
-    score = 0; speed = 10; obs = []; p.x = 180; active = true; 
-    c.style.borderColor = "#0052FF";
-    document.getElementById("s").innerText = "0"; 
-    document.getElementById("menu").style.display = "none"; 
-    loop(); 
-}
-
 async function connectWallet() {
-    const connBtn = document.getElementById("connectBtn");
-    const discBtn = document.getElementById("disconnectBtn");
+    const provider = window.okxwallet || window.ethereum;
+    if (!provider) { alert("Please use a web3 browser or wallet app!"); return; }
+    
     try {
-        const provider = window.okxwallet || window.ethereum;
-        if (!provider) { return; }
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         if (accounts[0]) {
-            connBtn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
-            connBtn.style.background = "#000"; connBtn.style.borderColor = "#fff";
-            connBtn.disabled = true;
-            discBtn.style.display = "inline-block";
-            updateLifetimeUI(); // Sync score as soon as wallet is connected
+            // Hide Login, Show Game
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("gameContainer").style.display = "block";
+            
+            // Update UI
+            const btn = document.getElementById("connectBtn");
+            btn.innerText = accounts[0].slice(0,6)+"..."+accounts[0].slice(-4);
+            btn.disabled = true;
+            document.getElementById("disconnectBtn").style.display = "inline-block";
+            
+            drawPlayer();
+            updateLifetimeUI();
         }
     } catch (err) { console.log(err); }
 }
 
 function disconnectWallet() {
-    const connBtn = document.getElementById("connectBtn");
-    const discBtn = document.getElementById("disconnectBtn");
-    connBtn.innerText = "CONNECT WALLET";
-    connBtn.style.background = "rgba(0,82,255,0.2)";
-    connBtn.style.borderColor = "#0052FF";
-    connBtn.disabled = false;
-    discBtn.style.display = "none";
-    document.getElementById("ls").innerText = "0";
+    location.reload(); // Simplest way to reset state
+}
+
+function startGame() { 
+    document.getElementById("startMenu").style.display = "none"; 
+    active = true; loop(); 
+}
+
+function resetGame() { 
+    score = 0; speed = 10; obs = []; p.x = 180; active = true; 
+    document.getElementById("s").innerText = "0"; 
+    document.getElementById("menu").style.display = "none"; 
+    loop(); 
 }
 
 function loop() {
@@ -158,30 +152,22 @@ function loop() {
             document.getElementById("fs").innerText = score;
         }
         if (o.y > 600) { 
-            obs.splice(i, 1); 
-            score++; 
+            obs.splice(i, 1); score++; 
             document.getElementById("s").innerText = score; 
             speed += 0.15; 
-            if (score % 10 === 0) {
-                c.style.borderColor = "#FFD700";
-                setTimeout(() => { if(active) c.style.borderColor = "#0052FF"; }, 500);
-            }
         }
     }
     requestAnimationFrame(loop);
 }
 
-// --- UPDATED SYNC LOGIC ---
-
 async function updateLifetimeUI() {
     const lsElement = document.getElementById("ls");
     const provider = window.okxwallet || window.ethereum;
-
     const accounts = await provider.request({ method: 'eth_accounts' });
     if (accounts.length === 0) return;
     
     const userAddr = accounts[0].toLowerCase();
-    lsElement.innerText = "Syncing..."; 
+    lsElement.innerText = "..."; 
 
     try {
         const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
@@ -191,55 +177,43 @@ async function updateLifetimeUI() {
                 jsonrpc: "2.0", id: 1, 
                 method: "eth_getLogs", 
                 params: [{
-                    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
+                    address: USDC_ADDR,
                     fromBlock: "0x0", 
                     topics: [
-                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
-                        "0x" + userAddr.substring(2).padStart(64, "0"), // From: You
-                        "0x" + "F5F563794da1d8Bc2566502731C4C82c6a88F802".substring(2).toLowerCase().padStart(64, "0") // To: Dev
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", 
+                        "0x" + userAddr.substring(2).padStart(64, "0"), 
+                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0")
                     ]
                 }] 
             })
         });
 
         const d = await res.json(); 
-        console.log("Blockchain Response:", d); // Look at your PC's F12 Console for this!
-
         let total = 0;
         if (d.result && d.result.length > 0) {
             d.result.forEach(log => {
-                // Grab the score hidden at the end of the data
-                const hiddenScoreHex = log.data.slice(-64);
-                const points = parseInt(hiddenScoreHex, 16);
-                if (!isNaN(points)) total += points;
+                if (log.data.length > 100) {
+                    total += parseInt(log.data.slice(-64), 16) || 0;
+                } else {
+                    total += 50; // Legacy
+                }
             });
             lsElement.innerText = total;
-            localStorage.setItem("glawnet_total_score", total);
         } else {
-            // If the blockchain says 0, we check local storage
-            lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
+            lsElement.innerText = "0";
         }
-    } catch (e) {
-        console.error("Sync Error:", e);
-        lsElement.innerText = "Error";
-    }
+    } catch (e) { lsElement.innerText = "Error"; }
 }
+
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
     try {
-        await provider.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x2105' }],
-        });
-
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
-        // HIDE THE SCORE IN DATA
         const scoreHex = score.toString(16).padStart(64, "0");
         const data = "0xa9059cbb" + 
                      DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
-                     amountHex.padStart(64, "0") + 
-                     scoreHex; // Append score to the USDC transfer
+                     "0000000000000000000000000000000000000000000000000000000000002710" + 
+                     scoreHex;
 
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
@@ -247,80 +221,42 @@ async function payAndSave() {
         });
 
         if (txHash) {
-            // Instant local update while waiting for blockchain sync
-            let currentLocal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
-            localStorage.setItem("glawnet_total_score", currentLocal + score);
-            
-            alert("Score saved to Blockchain! Syncing...");
+            alert("Payment Sent! Score is syncing...");
             resetGame();
-            setTimeout(updateLifetimeUI, 5000); // Give Alchemy a few seconds to index
+            setTimeout(updateLifetimeUI, 8000);
         }
-    } catch (e) {
-        alert("Payment Error: " + (e.message || "Canceled"));
-    }
+    } catch (e) { alert("Error: " + e.message); }
 }
 
-// Global Leaderboard - Summing up all hidden scores for all users
 async function renderLeaderboard() {
     const list = document.getElementById("scoreList");
-    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing Global...</p>";
+    list.innerHTML = "Syncing...";
     try {
         const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 jsonrpc: "2.0", id: 1, 
                 method: "eth_getLogs", 
                 params: [{ 
-                    address: USDC_ADDR, 
-                    fromBlock: "0x1100000", 
-                    topics: [
-                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-                        null, // Any Sender
-                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") // Only TO your wallet
-                    ] 
+                    address: USDC_ADDR, fromBlock: "0x0", 
+                    topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", null, "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0")] 
                 }] 
             })
         });
         const d = await res.json(); 
         let playerTotals = {};
-        
-        if (d.result && d.result.length > 0) {
+        if (d.result) {
             d.result.forEach(log => {
                 let addr = "0x" + log.topics[1].slice(26).toLowerCase();
-                let scoreFromHex = parseInt(log.data.slice(-64), 16) || 0;
-                playerTotals[addr] = (playerTotals[addr] || 0) + scoreFromHex;
+                let s = (log.data.length > 100) ? parseInt(log.data.slice(-64), 16) : 50;
+                playerTotals[addr] = (playerTotals[addr] || 0) + s;
             });
-
             let sorted = Object.entries(playerTotals).sort((a,b) => b[1]-a[1]).slice(0,5);
-            let html = "";
-            sorted.forEach((p, i) => {
-                html += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;">
-                            <span>#${i+1} ${p[0].slice(0,6)}...${p[0].slice(-4)}</span>
-                            <strong style="color:#4ade80;">LIFETIME: ${p[1]}</strong>
-                         </div>`;
-            });
-            list.innerHTML = html;
-        } else {
-            list.innerHTML = "<p style='text-align:center;'>No records on-chain yet.</p>";
+            list.innerHTML = sorted.map((p, i) => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333;"><span>#${i+1} ${p[0].slice(0,6)}...</span><strong>${p[1]}</strong></div>`).join("");
         }
-    } catch (e) { 
-        list.innerHTML = "<p style='text-align:center; color:red;'>Sync Error</p>"; 
-    }
+    } catch (e) { list.innerHTML = "Sync Error"; }
 }
-
-// Controls
-window.addEventListener("touchmove", function(e) {
-    var rect = c.getBoundingClientRect();
-    p.x = Math.max(0, Math.min((e.touches[0].clientX - rect.left) * (400 / rect.width) - 20, 360));
-    if (!active) drawPlayer();
-    e.preventDefault(); 
-}, {passive: false});
-
-window.addEventListener("mousemove", function(e) {
-    var rect = c.getBoundingClientRect();
-    p.x = Math.max(0, Math.min((e.clientX - rect.left) * (400 / rect.width) - 20, 360));
-    if (!active) drawPlayer();
-});
 
 function toggleLeaderboard() {
     const tab = document.getElementById("leaderboardTab");
@@ -328,9 +264,29 @@ function toggleLeaderboard() {
     if (tab.style.display === "block") renderLeaderboard();
 }
 
-window.onload = function() {
-    connectWallet();
-    drawPlayer(); 
+// Input Listeners
+window.addEventListener("touchmove", (e) => {
+    var rect = c.getBoundingClientRect();
+    p.x = Math.max(0, Math.min((e.touches[0].clientX - rect.left) * (400 / rect.width) - 20, 360));
+    if (!active) drawPlayer();
+    e.preventDefault();
+}, {passive: false});
+
+window.addEventListener("mousemove", (e) => {
+    var rect = c.getBoundingClientRect();
+    p.x = Math.max(0, Math.min((e.clientX - rect.left) * (400 / rect.width) - 20, 360));
+    if (!active) drawPlayer();
+});
+
+window.onload = () => {
+    // If already connected, skip login
+    const provider = window.okxwallet || window.ethereum;
+    if (provider) {
+        provider.request({ method: 'eth_accounts' }).then(accounts => {
+            if (accounts.length > 0) connectWallet();
+            else drawPlayer();
+        });
+    }
 };
 </script>
 </body>
