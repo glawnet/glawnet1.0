@@ -57,7 +57,24 @@ canvas {
     background: black;
 }
 
-.ui-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; width: 280px; }
+.ui-box { 
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    background: #111; 
+    padding: 30px; 
+    border: 2px solid #0052FF; 
+    border-radius: 20px; 
+    box-shadow: 0 0 30px #0052FF; 
+    
+    /* Set this to 5000 to stay above everything else */
+    z-index: 5000; 
+    width: 280px; 
+}
+
+/* Specifically ensure the Start Menu is slightly lower than the Popups */
+#startMenu { z-index: 1000; }
 button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 15px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; }
 #lbBtn { background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; color: #4ade80; }
 #connectBtn { background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; }
@@ -156,30 +173,34 @@ const amountHex = "2710"; // $0.01
 
     // Function to open a specific tab and close everything else
 function openTab(tabId) {
-    closeAllTabs(); // Hide all open UI boxes
-    
-    // If the sidebar is open, close it
+    // 1. Hide everything first, including the Ready/Start menu
+    document.getElementById("startMenu").style.display = "none";
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("leaderboardTab").style.display = "none";
+    document.getElementById("docsTab").style.display = "none";
+    document.getElementById("faqTab").style.display = "none";
+    document.getElementById("supportTab").style.display = "none";
+
+    // 2. Close the sidebar if it's open
     const sidebar = document.getElementById("sidebar");
     if (sidebar && sidebar.style.left === "0px") {
         toggleSidebar(); 
     }
 
-    // Show the requested tab
+    // 3. Show only the one we want
     document.getElementById(tabId).style.display = "block";
     
-    // Special case: if opening leaderboard, refresh the data
     if (tabId === 'leaderboardTab') renderLeaderboard();
 }
 
-// Function to hide every possible popup box
 function closeAllTabs() {
-    const tabs = ['docsTab', 'faqTab', 'supportTab', 'leaderboardTab', 'menu', 'startMenu'];
+    // Hide all popup tabs
+    const tabs = ['docsTab', 'faqTab', 'supportTab', 'leaderboardTab'];
     tabs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = "none";
+        document.getElementById(id).style.display = "none";
     });
-    
-    // After closing a tab, if the game isn't active, show the start menu back
+
+    // ONLY show the start menu back if the game isn't currently running
     if (!active) {
         document.getElementById("startMenu").style.display = "block";
     }
