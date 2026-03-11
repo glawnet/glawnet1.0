@@ -345,6 +345,19 @@ function toggleLeaderboard() {
     if (tab.style.display === "block") renderLeaderboard();
 }
 
+    window.onload = async () => {
+    const provider = window.okxwallet || window.ethereum;
+    if (provider) {
+        const accounts = await provider.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+            // Already connected! Skip the login screen
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("gameContainer").style.display = "block";
+            updateLifetimeUI();
+        }
+    }
+};
+    
 window.onload = function() {
     connectWallet();
     drawPlayer(); 
