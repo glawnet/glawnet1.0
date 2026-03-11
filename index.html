@@ -116,21 +116,42 @@ function resetGame() {
     loop(); 
 }
 
+// Global variable to track if we are waiting to pay after connecting
+let pendingPayAndSave = false;
+
 async function connectWallet() {
-    const connBtn = document.getElementById("connectBtn");
-    const discBtn = document.getElementById("disconnectBtn");
+    const provider = window.okxwallet || window.ethereum;
+    if (!provider) { 
+        alert("Please open this in a Web3 Browser (OKX, Coinbase, etc.)"); 
+        return; 
+    }
+
     try {
-        const provider = window.okxwallet || window.ethereum;
-        if (!provider) { return; }
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        
         if (accounts[0]) {
-            connBtn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
-            connBtn.style.background = "#000"; connBtn.style.borderColor = "#fff";
-            connBtn.disabled = true;
-            discBtn.style.display = "inline-block";
-            updateLifetimeUI(); // Sync score as soon as wallet is connected
+            // Update UI
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("gameContainer").style.display = "block";
+            
+            const btn = document.getElementById("connectBtn");
+            btn.innerText = accounts[0].slice(0,6) + "..." + accounts[0].slice(-4);
+            btn.disabled = true;
+            document.getElementById("disconnectBtn").style.display = "inline-block";
+
+            // SYNC STEP: If the user clicked "Save" while logged out, 
+            // now that they are logged in, trigger the payment.
+            if (pendingPayAndSave) {
+                pendingPayAndSave = false; // Reset flag
+                await payAndSave(); 
+            } else {
+                updateLifetimeUI();
+            }
         }
-    } catch (err) { console.log(err); }
+    } catch (err) {
+        console.log("Connection Rejected", err);
+        pendingPayAndSave = false;
+    }
 }
 
 function disconnectWallet() {
@@ -226,20 +247,30 @@ async function updateLifetimeUI() {
 }
 async function payAndSave() {
     const provider = window.okxwallet || window.ethereum;
+    
+    // GATEKEEPER: Check if accounts exist
+    const accounts = await provider.request({ method: 'eth_accounts' });
+    
+    if (accounts.length === 0) {
+        // If not connected, set the flag and trigger connection
+        alert("Connect your wallet first to save your score!");
+        pendingPayAndSave = true;
+        await connectWallet();
+        return; // Stop here; connectWallet will re-call this function
+    }
+
     try {
+        // Ensure user is on Base Mainnet (0x2105)
         await provider.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: '0x2105' }],
         });
 
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
-        // HIDE THE SCORE IN DATA
         const scoreHex = score.toString(16).padStart(64, "0");
         const data = "0xa9059cbb" + 
                      DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
-                     amountHex.padStart(64, "0") + 
-                     scoreHex; // Append score to the USDC transfer
+                     "0000000000000000000000000000000000000000000000000000000000002710" + 
+                     scoreHex;
 
         const txHash = await provider.request({
             method: 'eth_sendTransaction',
@@ -247,19 +278,15 @@ async function payAndSave() {
         });
 
         if (txHash) {
-            // Instant local update while waiting for blockchain sync
-            let currentLocal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
-            localStorage.setItem("glawnet_total_score", currentLocal + score);
-            
-            alert("Score saved to Blockchain! Syncing...");
+            alert("Score saved! Syncing with Base...");
             resetGame();
-            setTimeout(updateLifetimeUI, 5000); // Give Alchemy a few seconds to index
+            setTimeout(updateLifetimeUI, 5000);
         }
     } catch (e) {
-        alert("Payment Error: " + (e.message || "Canceled"));
+        alert("Transaction Cancelled: " + e.message);
     }
 }
-
+    
 // Global Leaderboard - Summing up all hidden scores for all users
 async function renderLeaderboard() {
     const list = document.getElementById("scoreList");
