@@ -120,12 +120,20 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 
 <div id="supportTab" class="ui-box" style="display: none;">
     <h2 style="color: #FF3B30;">SUPPORT</h2>
-    <p style="font-size: 14px;">Need help or found a bug?</p>
-    <button onclick="window.location.href='mailto:your-email@gmail.com?subject=GLAWNET Support'" 
-            style="background:#222; border: 1px solid #FF3B30; color: #FF3B30;">
-        EMAIL SUPPORT
+    <p style="font-size: 14px; color: #ccc;">Found a bug or need help with a transaction?</p>
+    
+    <button onclick="window.location.href='mailto:YOUR_EMAIL@gmail.com?subject=GLAWNET Support'" 
+            style="background:#0052FF; color: white; border: none;">
+        SEND EMAIL
     </button>
-    <button onclick="closeAllTabs()" style="background:none; margin-top:5px; color:#666;">Close</button>
+
+    <button onclick="copyEmail()" style="background:rgba(255,255,255,0.1); border: 1px solid #444; color: #aaa; font-size: 11px;">
+        COPY EMAIL ADDRESS
+    </button>
+    
+    <button onclick="closeAllTabs()" style="background:none; text-decoration:underline; color:#666; margin-top: 10px;">
+        CLOSE
+    </button>
 </div>
     
 <div class="header">
@@ -206,6 +214,12 @@ function closeAllTabs() {
     }
 }
 
+function copyEmail() {
+    const email = "YOUR_EMAIL@gmail.com"; // Replace with your actual email
+    navigator.clipboard.writeText(email);
+    alert("Email address copied to clipboard!");
+}
+    
 function drawPlayer() {
     x.clearRect(0, 0, 400, 600);
     x.fillStyle = "#0052FF";
