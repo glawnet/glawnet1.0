@@ -2,20 +2,6 @@
 <html>
 <head>
     <meta name="base:app_id" content="69aed2632976dc607e3a6704" />
-
-    <div id="menuIcon" onclick="toggleSidebar()" style="position: fixed; top: 15px; left: 15px; z-index: 2000; cursor: pointer; font-size: 24px;">☰</div>
-
-<div id="sidebar" style="position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background: #000; z-index: 3000; transition: 0.3s; padding: 60px 20px; text-align: left; border-right: 1px solid #333;">
-    <div onclick="toggleSidebar()" style="position: absolute; top: 15px; right: 20px; font-size: 20px; cursor: pointer; color: #666;">✕</div>
-    
-    <div class="menu-item" onclick="window.open('#docs')">📄 Docs</div>
-    <div class="menu-item" onclick="window.open('#support')">⊗ Support</div>
-    <div class="menu-item" onclick="window.open('#faq')">ⓘ FAQ</div>
-    <div class="menu-item" onclick="openLeaderboardFromMenu()">🏆 Leaderboard</div>
-    <div class="menu-item" onclick="window.open('https://twitter.com/yourhandle')">𝕏 Twitter</div>
-</div>
-
-<div id="sideOverlay" onclick="toggleSidebar()" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2500;"></div>
 <title>GLAWNET</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
@@ -80,6 +66,20 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 </style>
 </head>
 <body>
+
+     <div id="menuIcon" onclick="toggleSidebar()" style="position: fixed; top: 15px; left: 15px; z-index: 2000; cursor: pointer; font-size: 24px;">☰</div>
+
+<div id="sidebar" style="position: fixed; top: 0; left: -280px; width: 250px; height: 100%; background: #000; z-index: 3000; transition: 0.3s; padding: 60px 20px; text-align: left; border-right: 1px solid #333;">
+    <div onclick="toggleSidebar()" style="position: absolute; top: 15px; right: 20px; font-size: 20px; cursor: pointer; color: #666;">✕</div>
+    
+    <div class="menu-item" onclick="window.open('#docs')">📄 Docs</div>
+    <div class="menu-item" onclick="window.open('#support')">⊗ Support</div>
+    <div class="menu-item" onclick="window.open('#faq')">ⓘ FAQ</div>
+    <div class="menu-item" onclick="openLeaderboardFromMenu()">🏆 Leaderboard</div>
+    <div class="menu-item" onclick="window.open('https://twitter.com/yourhandle')">𝕏 Twitter</div>
+</div>
+
+<div id="sideOverlay" onclick="toggleSidebar()" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2500;"></div>
 
 <div class="header">
     <button id="lbBtn" onclick="toggleLeaderboard()">LEADERBOARD</button>
@@ -391,12 +391,6 @@ function openLeaderboardFromMenu() {
 window.addEventListener('keydown', (e) => {
     if (e.key === "Escape") toggleSidebar();
 });
-
-function toggleLeaderboard() {
-    const tab = document.getElementById("leaderboardTab");
-    tab.style.display = (tab.style.display === "none") ? "block" : "none";
-    if (tab.style.display === "block") renderLeaderboard();
-}
 
 window.onload = function() {
     drawPlayer();
