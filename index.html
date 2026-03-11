@@ -51,6 +51,17 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 </head>
 <body>
 
+    <div id="loginScreen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <h1 style="color:white; margin-bottom:20px;">GLAWNET</h1>
+    <button onclick="connectWallet()" style="background:#0052FF; color:white; padding:15px 30px; border-radius:12px; border:none; font-size:18px; cursor:pointer; font-weight:bold;">
+        Connect Wallet to Play
+    </button>
+    <p style="color:#666; margin-top:15px; font-size:12px;">Base Mainnet Required</p>
+</div>
+
+<div id="gameContainer" style="display:none;">
+    </div>
+
 <div class="header">
     <button id="lbBtn" onclick="toggleLeaderboard()">LEADERBOARD</button>
     <div id="walletActions">
@@ -117,20 +128,26 @@ function resetGame() {
 }
 
 async function connectWallet() {
-    const connBtn = document.getElementById("connectBtn");
-    const discBtn = document.getElementById("disconnectBtn");
+    const provider = window.okxwallet || window.ethereum;
+    if (!provider) {
+        alert("Please install a wallet like OKX or Coinbase Wallet!");
+        return;
+    }
+
     try {
-        const provider = window.okxwallet || window.ethereum;
-        if (!provider) { return; }
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        if (accounts[0]) {
-            connBtn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
-            connBtn.style.background = "#000"; connBtn.style.borderColor = "#fff";
-            connBtn.disabled = true;
-            discBtn.style.display = "inline-block";
-            updateLifetimeUI(); // Sync score as soon as wallet is connected
+        if (accounts.length > 0) {
+            // Success! Hide login, show game
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("gameContainer").style.display = "block";
+            
+            // Sync the UI
+            updateLifetimeUI();
+            console.log("Player authorized:", accounts[0]);
         }
-    } catch (err) { console.log(err); }
+    } catch (err) {
+        console.error("User rejected connection");
+    }
 }
 
 function disconnectWallet() {
