@@ -69,9 +69,9 @@ button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; c
 <div id="startMenu" class="ui-box">
     <h2 style="color: #0052FF;">READY?</h2>
     <p>Avoid the red squares.</p>
-    <button id="startBtn" onclick="startGame()">START GAME</button>
+    <button id="startBtn" onclick="startGame()" disabled>CONNECT WALLET TO PLAY</button>
 </div>
-
+    
 <div id="leaderboardTab" class="ui-box" style="display: none;">
     <h2 style="color: #4ade80; margin-top: 0;">GLOBAL RUNNERS</h2>
     <div id="scoreList" style="text-align: left; margin-bottom: 20px; max-height: 200px; overflow-y: auto;"></div>
@@ -119,16 +119,26 @@ function resetGame() {
 async function connectWallet() {
     const connBtn = document.getElementById("connectBtn");
     const discBtn = document.getElementById("disconnectBtn");
+    const startBtn = document.getElementById("startBtn");
+
     try {
         const provider = window.okxwallet || window.ethereum;
-        if (!provider) { return; }
+        if (!provider) { alert("Please install a wallet!"); return; }
+        
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        
         if (accounts[0]) {
+            // Update Wallet Buttons
             connBtn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
             connBtn.style.background = "#000"; connBtn.style.borderColor = "#fff";
             connBtn.disabled = true;
             discBtn.style.display = "inline-block";
-            updateLifetimeUI(); // Sync score as soon as wallet is connected
+            
+            // UNLOCK THE START BUTTON
+            startBtn.disabled = false;
+            startBtn.innerText = "START GAME";
+            
+            updateLifetimeUI();
         }
     } catch (err) { console.log(err); }
 }
@@ -136,11 +146,18 @@ async function connectWallet() {
 function disconnectWallet() {
     const connBtn = document.getElementById("connectBtn");
     const discBtn = document.getElementById("disconnectBtn");
+    const startBtn = document.getElementById("startBtn");
+
     connBtn.innerText = "CONNECT WALLET";
     connBtn.style.background = "rgba(0,82,255,0.2)";
     connBtn.style.borderColor = "#0052FF";
     connBtn.disabled = false;
     discBtn.style.display = "none";
+    
+    // RE-LOCK THE START BUTTON
+    startBtn.disabled = true;
+    startBtn.innerText = "CONNECT WALLET TO PLAY";
+    
     document.getElementById("ls").innerText = "0";
 }
 
@@ -329,9 +346,16 @@ function toggleLeaderboard() {
 }
 
 window.onload = function() {
-    connectWallet();
-    drawPlayer(); 
+    drawPlayer();
+    // Auto-connect if already authorized
+    const provider = window.okxwallet || window.ethereum;
+    if (provider) {
+        provider.request({ method: 'eth_accounts' }).then(accounts => {
+            if (accounts.length > 0) connectWallet();
+        });
+    }
 };
+    
 </script>
 </body>
 </html>
