@@ -2,56 +2,52 @@
 <html>
 <head>
     <meta name="base:app_id" content="69aed2632976dc607e3a6704" />
-    <title>GLAWNET</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <style>
-        body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
-        canvas { 
-            background: #0a0a0a; 
-            display: block; 
-            margin: 0 auto; 
-            border-bottom: 5px solid #0052FF; 
-            touch-action: none;
-            max-height: 70vh; 
-            width: auto;
-            transition: border-color 0.3s ease;
-        }
+<title>GLAWNET</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+body { background: black; color: white; text-align: center; margin: 0; overflow: hidden; font-family: sans-serif; }
+canvas { 
+    background: #0a0a0a; 
+    display: block; 
+    margin: 0 auto; 
+    border-bottom: 5px solid #0052FF; 
+    touch-action: none;
+    max-height: 70vh; 
+    width: auto;
+    transition: border-color 0.3s ease;
+}
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            background: #000;
-            z-index: 1001;
-        }
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: #000;
+    z-index: 1001;
+}
 
-        #walletActions { display: flex; gap: 5px; }
+#walletActions { display: flex; gap: 5px; }
 
-        #lbBtn, #connectBtn, #disconnectBtn { 
-            position: static; 
-            padding: 10px 12px;
-            font-size: 11px;
-            width: auto;
-            margin: 0;
-        }
+#lbBtn, #connectBtn, #disconnectBtn { 
+    position: static; 
+    padding: 10px 12px;
+    font-size: 11px;
+    width: auto;
+    margin: 0;
+}
 
-        .title-area {
-            padding: 10px 0;
-            background: black;
-        }
+.title-area {
+    padding: 10px 0;
+    background: black;
+}
 
-        .ui-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; width: 280px; }
-        button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 15px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; }
-        
-        /* Disabled State Styling */
-        button:disabled { background: #333 !important; color: #666 !important; cursor: not-allowed; border-color: #444 !important; }
-
-        #lbBtn { background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; color: #4ade80; }
-        #connectBtn { background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; }
-        #disconnectBtn { background: rgba(255, 59, 48, 0.1); border: 1px solid #FF3B30; color: #FF3B30; display: none; }
-        #leaderboardTab { border-color: #4ade80; box-shadow: 0 0 30px #4ade80; }
-    </style>
+.ui-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 30px; border: 2px solid #0052FF; border-radius: 20px; box-shadow: 0 0 30px #0052FF; z-index: 100; width: 280px; }
+button { cursor: pointer; border: none; transition: 0.2s; background: #0052FF; color: white; padding: 15px; font-weight: bold; width: 100%; border-radius: 12px; margin-top: 10px; }
+#lbBtn { background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; color: #4ade80; }
+#connectBtn { background: rgba(0,82,255,0.2); border: 1px solid #0052FF; color: #0052FF; }
+#disconnectBtn { background: rgba(255, 59, 48, 0.1); border: 1px solid #FF3B30; color: #FF3B30; display: none; }
+#leaderboardTab { border-color: #4ade80; box-shadow: 0 0 30px #4ade80; }
+</style>
 </head>
 <body>
 
@@ -73,7 +69,7 @@
 <div id="startMenu" class="ui-box">
     <h2 style="color: #0052FF;">READY?</h2>
     <p>Avoid the red squares.</p>
-    <button id="startBtn" onclick="startGame()" disabled>CONNECT WALLET TO PLAY</button>
+    <button id="startBtn" onclick="startGame()">START GAME</button>
 </div>
 
 <div id="leaderboardTab" class="ui-box" style="display: none;">
@@ -94,9 +90,10 @@ var c = document.getElementById("g"), x = c.getContext("2d");
 c.width = 400; c.height = 600;
 var score = 0, active = false, speed = 10, p = { x: 180, y: 500, w: 40, h: 40 }, obs = [];
 
+// Constants
 const DEV_WALLET = "0xF5F563794da1d8Bc2566502731C4C82c6a88F802";
 const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const amountHex = "2710"; 
+const amountHex = "2710"; // $0.01
 
 function drawPlayer() {
     x.clearRect(0, 0, 400, 600);
@@ -122,26 +119,16 @@ function resetGame() {
 async function connectWallet() {
     const connBtn = document.getElementById("connectBtn");
     const discBtn = document.getElementById("disconnectBtn");
-    const startBtn = document.getElementById("startBtn");
-
     try {
         const provider = window.okxwallet || window.ethereum;
-        if (!provider) { alert("Please install a wallet!"); return; }
-        
+        if (!provider) { return; }
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        
         if (accounts[0]) {
-            // Update Wallet Buttons
             connBtn.innerText = accounts[0].substring(0, 6) + "..." + accounts[0].substring(38);
             connBtn.style.background = "#000"; connBtn.style.borderColor = "#fff";
             connBtn.disabled = true;
             discBtn.style.display = "inline-block";
-            
-            // UNLOCK THE START BUTTON
-            startBtn.disabled = false;
-            startBtn.innerText = "START GAME";
-            
-            updateLifetimeUI();
+            updateLifetimeUI(); // Sync score as soon as wallet is connected
         }
     } catch (err) { console.log(err); }
 }
@@ -149,35 +136,202 @@ async function connectWallet() {
 function disconnectWallet() {
     const connBtn = document.getElementById("connectBtn");
     const discBtn = document.getElementById("disconnectBtn");
-    const startBtn = document.getElementById("startBtn");
-
     connBtn.innerText = "CONNECT WALLET";
     connBtn.style.background = "rgba(0,82,255,0.2)";
     connBtn.style.borderColor = "#0052FF";
     connBtn.disabled = false;
     discBtn.style.display = "none";
-    
-    // RE-LOCK THE START BUTTON
-    startBtn.disabled = true;
-    startBtn.innerText = "CONNECT WALLET TO PLAY";
-    
     document.getElementById("ls").innerText = "0";
 }
 
-// ... rest of your loop(), updateLifetimeUI(), payAndSave(), and renderLeaderboard() functions ...
+function loop() {
+    if (!active) return;
+    x.clearRect(0, 0, 400, 600);
+    x.fillStyle = "#0052FF"; x.fillRect(p.x, p.y, p.w, p.h);
+    if (Math.random() < 0.06) { obs.push({ x: Math.random() * 360, y: -40, w: 40, h: 40 }); }
+    for (var i = obs.length - 1; i >= 0; i--) {
+        var o = obs[i]; o.y += speed;
+        x.fillStyle = "#FF3B30"; x.fillRect(o.x, o.y, o.w, o.h);
+        if (p.x < o.x + o.w && p.x + p.w > o.x && p.y < o.y + o.h && p.y + p.h > o.y) {
+            active = false; 
+            document.getElementById("menu").style.display = "block";
+            document.getElementById("fs").innerText = score;
+        }
+        if (o.y > 600) { 
+            obs.splice(i, 1); 
+            score++; 
+            document.getElementById("s").innerText = score; 
+            speed += 0.15; 
+            if (score % 10 === 0) {
+                c.style.borderColor = "#FFD700";
+                setTimeout(() => { if(active) c.style.borderColor = "#0052FF"; }, 500);
+            }
+        }
+    }
+    requestAnimationFrame(loop);
+}
+
+// --- UPDATED SYNC LOGIC ---
+
+async function updateLifetimeUI() {
+    const lsElement = document.getElementById("ls");
+    const provider = window.okxwallet || window.ethereum;
+
+    const accounts = await provider.request({ method: 'eth_accounts' });
+    if (accounts.length === 0) return;
+    
+    const userAddr = accounts[0].toLowerCase();
+    lsElement.innerText = "Syncing..."; 
+
+    try {
+        const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                jsonrpc: "2.0", id: 1, 
+                method: "eth_getLogs", 
+                params: [{
+                    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
+                    fromBlock: "0x0", 
+                    topics: [
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+                        "0x" + userAddr.substring(2).padStart(64, "0"), // From: You
+                        "0x" + "F5F563794da1d8Bc2566502731C4C82c6a88F802".substring(2).toLowerCase().padStart(64, "0") // To: Dev
+                    ]
+                }] 
+            })
+        });
+
+        const d = await res.json(); 
+        console.log("Blockchain Response:", d); // Look at your PC's F12 Console for this!
+
+        let total = 0;
+        if (d.result && d.result.length > 0) {
+            d.result.forEach(log => {
+                // Grab the score hidden at the end of the data
+                const hiddenScoreHex = log.data.slice(-64);
+                const points = parseInt(hiddenScoreHex, 16);
+                if (!isNaN(points)) total += points;
+            });
+            lsElement.innerText = total;
+            localStorage.setItem("glawnet_total_score", total);
+        } else {
+            // If the blockchain says 0, we check local storage
+            lsElement.innerText = localStorage.getItem("glawnet_total_score") || "0";
+        }
+    } catch (e) {
+        console.error("Sync Error:", e);
+        lsElement.innerText = "Error";
+    }
+}
+async function payAndSave() {
+    const provider = window.okxwallet || window.ethereum;
+    try {
+        await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }],
+        });
+
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        
+        // HIDE THE SCORE IN DATA
+        const scoreHex = score.toString(16).padStart(64, "0");
+        const data = "0xa9059cbb" + 
+                     DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") + 
+                     amountHex.padStart(64, "0") + 
+                     scoreHex; // Append score to the USDC transfer
+
+        const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: accounts[0], to: USDC_ADDR, data: data }],
+        });
+
+        if (txHash) {
+            // Instant local update while waiting for blockchain sync
+            let currentLocal = parseInt(localStorage.getItem("glawnet_total_score")) || 0;
+            localStorage.setItem("glawnet_total_score", currentLocal + score);
+            
+            alert("Score saved to Blockchain! Syncing...");
+            resetGame();
+            setTimeout(updateLifetimeUI, 5000); // Give Alchemy a few seconds to index
+        }
+    } catch (e) {
+        alert("Payment Error: " + (e.message || "Canceled"));
+    }
+}
+
+// Global Leaderboard - Summing up all hidden scores for all users
+async function renderLeaderboard() {
+    const list = document.getElementById("scoreList");
+    list.innerHTML = "<p style='text-align:center; color:#0052FF;'>Syncing Global...</p>";
+    try {
+        const res = await fetch("https://base-mainnet.g.alchemy.com/v2/WqOrlf3wPtMDWxsL-VuUE", {
+            method: 'POST',
+            body: JSON.stringify({ 
+                jsonrpc: "2.0", id: 1, 
+                method: "eth_getLogs", 
+                params: [{ 
+                    address: USDC_ADDR, 
+                    fromBlock: "0x1100000", 
+                    topics: [
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                        null, // Any Sender
+                        "0x" + DEV_WALLET.substring(2).toLowerCase().padStart(64, "0") // Only TO your wallet
+                    ] 
+                }] 
+            })
+        });
+        const d = await res.json(); 
+        let playerTotals = {};
+        
+        if (d.result && d.result.length > 0) {
+            d.result.forEach(log => {
+                let addr = "0x" + log.topics[1].slice(26).toLowerCase();
+                let scoreFromHex = parseInt(log.data.slice(-64), 16) || 0;
+                playerTotals[addr] = (playerTotals[addr] || 0) + scoreFromHex;
+            });
+
+            let sorted = Object.entries(playerTotals).sort((a,b) => b[1]-a[1]).slice(0,5);
+            let html = "";
+            sorted.forEach((p, i) => {
+                html += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;">
+                            <span>#${i+1} ${p[0].slice(0,6)}...${p[0].slice(-4)}</span>
+                            <strong style="color:#4ade80;">LIFETIME: ${p[1]}</strong>
+                         </div>`;
+            });
+            list.innerHTML = html;
+        } else {
+            list.innerHTML = "<p style='text-align:center;'>No records on-chain yet.</p>";
+        }
+    } catch (e) { 
+        list.innerHTML = "<p style='text-align:center; color:red;'>Sync Error</p>"; 
+    }
+}
+
+// Controls
+window.addEventListener("touchmove", function(e) {
+    var rect = c.getBoundingClientRect();
+    p.x = Math.max(0, Math.min((e.touches[0].clientX - rect.left) * (400 / rect.width) - 20, 360));
+    if (!active) drawPlayer();
+    e.preventDefault(); 
+}, {passive: false});
+
+window.addEventListener("mousemove", function(e) {
+    var rect = c.getBoundingClientRect();
+    p.x = Math.max(0, Math.min((e.clientX - rect.left) * (400 / rect.width) - 20, 360));
+    if (!active) drawPlayer();
+});
+
+function toggleLeaderboard() {
+    const tab = document.getElementById("leaderboardTab");
+    tab.style.display = (tab.style.display === "none") ? "block" : "none";
+    if (tab.style.display === "block") renderLeaderboard();
+}
 
 window.onload = function() {
-    drawPlayer();
-    // Auto-connect if already authorized
-    const provider = window.okxwallet || window.ethereum;
-    if (provider) {
-        provider.request({ method: 'eth_accounts' }).then(accounts => {
-            if (accounts.length > 0) connectWallet();
-        });
-    }
+    connectWallet();
+    drawPlayer(); 
 };
-
-// [Keep your existing loop and other logic below]
 </script>
 </body>
 </html>
